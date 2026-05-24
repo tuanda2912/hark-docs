@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hark — Design Canvas</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+  <link rel="stylesheet" href="styles/tokens.css" />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #161a21;
+      color: #e8eaed;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+    #root { width: 100vw; height: 100vh; }
+    /* Stop the design canvas's default warm gray bg from clashing with our dark aesthetic */
+    .design-canvas {
+      background:
+        radial-gradient(ellipse 1400px 700px at 20% 0%, rgba(122,169,214,0.05), transparent 60%),
+        #11151b !important;
+    }
+    /* The canvas paints artboard backings white by default — let the artboard's own theme show through */
+    .dc-card { background: transparent !important; }
+    /* Re-tone the canvas chrome (section titles + artboard labels) for a dark host */
+    .design-canvas .dc-sectionhead .dc-editable { color: #e8eaed !important; }
+    .design-canvas .dc-sectionhead > div:nth-child(2) { color: #9aa3b2 !important; }
+    .design-canvas .dc-header { color: #9aa3b2 !important; }
+    .design-canvas .dc-header .dc-editable { color: #cfd5df !important; font-weight: 500; }
+    .design-canvas .dc-grip,
+    .design-canvas .dc-kebab,
+    .design-canvas .dc-expand { color: #6a7280 !important; }
+    .design-canvas .dc-grip:hover,
+    .design-canvas .dc-kebab:hover,
+    .design-canvas .dc-expand:hover { background: rgba(255,255,255,.06) !important; color: #e8eaed !important; }
+    .design-canvas .dc-labeltext:hover { background: rgba(255,255,255,.04) !important; }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="components/shared.jsx"></script>
+  <script type="text/babel" src="artboards/MainWindow.jsx"></script>
+  <script type="text/babel" src="artboards/TrayMenu.jsx"></script>
+  <script type="text/babel" src="artboards/PostMeetingReview.jsx"></script>
+  <script type="text/babel" src="artboards/QAPanel.jsx"></script>
+  <script type="text/babel" src="artboards/SettingsPrivacy.jsx"></script>
+  <script type="text/babel" src="artboards/Onboarding.jsx"></script>
+  <script type="text/babel" src="artboards/DocsSite.jsx"></script>
+  <script type="text/babel" src="artboards/ComponentSheet.jsx"></script>
+  <script type="text/babel" src="artboards/SpeakerTagging.jsx"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useEffect, useState } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#5eb3c8",
+      "speakerStyle": "pill",
+      "transcriptDensity": "compact",
+      "showTranslation": true,
+      "fontStack": "system"
+    }/*EDITMODE-END*/;
+
+    // Accent options — all share roughly the same muted lightness/chroma family.
+    const ACCENT_OPTIONS = [
+      "#7aa9d6", // muted teal-blue (default)
+      "#5eb3c8", // teal
+      "#9ab09c", // sage
+      "#c79b85", // dusty terracotta
+      "#a39bc4", // muted lavender
+    ];
+
+    const FONT_STACKS = {
+      system: {
+        ui:      '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif',
+        display: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
+        mono:    'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
+      },
+      inter: {
+        ui:      '"Inter", system-ui, sans-serif',
+        display: '"Inter", system-ui, sans-serif',
+        mono:    '"JetBrains Mono", ui-monospace, Menlo, monospace',
+      },
+    };
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      // Apply accent globally by stamping CSS vars on <html>.
+      useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty("--accent-tweak", t.accent);
+        root.style.setProperty("--accent-soft-tweak", t.accent + "24");
+        const fonts = FONT_STACKS[t.fontStack] || FONT_STACKS.system;
+        root.style.setProperty("--font-ui", fonts.ui);
+        root.style.setProperty("--font-display", fonts.display);
+        root.style.setProperty("--font-mono", fonts.mono);
+      }, [t.accent, t.fontStack]);
+
+      // Override accent vars after CSS file loaded by injecting a tiny style block.
+      useEffect(() => {
+        let s = document.getElementById("__hark_accent_override");
+        if (!s) {
+          s = document.createElement("style");
+          s.id = "__hark_accent_override";
+          document.head.appendChild(s);
+        }
+        s.textContent = `
+          [data-theme="dark"]  { --accent: ${t.accent}; --accent-soft: ${t.accent}24; }
+          [data-theme="light"] { --accent: ${shade(t.accent, -0.18)}; --accent-soft: ${t.accent}1c; }
+        `;
+      }, [t.accent]);
+
+      // Density: tighten transcript line padding via a body class
+      useEffect(() => {
+        document.body.dataset.density = t.transcriptDensity;
+        document.body.dataset.showTranslation = t.showTranslation ? "true" : "false";
+        document.body.dataset.speakerStyle = t.speakerStyle;
+      }, [t.transcriptDensity, t.showTranslation, t.speakerStyle]);
+
+      return (
+        <>
+          <DesignCanvas>
+            <DCSection id="cover" title="Hark · UI/UX Design Pass" subtitle="Local-first meeting transcription · macOS · dark + light">
+              <DCArtboard id="cover" label="Read me first" width={700} height={520}>
+                <CoverCard />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="main-window" title="1 · Main window — live transcript" subtitle="Centerpiece · dark + light · variation explores compact transcript">
+              <DCArtboard id="mw-dark" label="Dark · default" width={1100} height={700}>
+                <MainWindow theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="mw-light" label="Light · default" width={1100} height={700}>
+                <MainWindow theme="light" />
+              </DCArtboard>
+              <DCArtboard id="mw-compact" label="Dark · compact transcript (variant)" width={1100} height={700}>
+                <MainWindow theme="dark" variant="compact" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="tray" title="2 · Tray menu" subtitle="Menubar popover · 280px wide · idle / recording / paused">
+              <DCArtboard id="tray-rec" label="Dark · recording" width={280} height={520}>
+                <TrayMenu theme="dark" state="recording" />
+              </DCArtboard>
+              <DCArtboard id="tray-idle" label="Dark · idle" width={280} height={420}>
+                <TrayMenu theme="dark" state="idle" />
+              </DCArtboard>
+              <DCArtboard id="tray-paused" label="Light · paused" width={280} height={520}>
+                <TrayMenu theme="light" state="paused" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="review" title="3 · Post-meeting review" subtitle="Tabs · summary · action items · chapters · unlabeled speaker resolve">
+              <DCArtboard id="rev-dark" label="Dark" width={1100} height={780}>
+                <PostMeetingReview theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="rev-light" label="Light" width={1100} height={780}>
+                <PostMeetingReview theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="qa" title="4 · Q&A panel — detail" subtitle="Streaming answer · numbered sources · privacy footer">
+              <DCArtboard id="qa-dark" label="Dark" width={380} height={700}>
+                <QAPanel theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="qa-light" label="Light" width={380} height={700}>
+                <QAPanel theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="settings" title="5 · Settings → Privacy" subtitle="Where trust lives · the receipt, the log, the spend">
+              <DCArtboard id="set-dark" label="Dark" width={1100} height={720}>
+                <SettingsPrivacy theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="set-light" label="Light" width={1100} height={720}>
+                <SettingsPrivacy theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="onboarding" title="6 · Onboarding · 3 screens" subtitle="Trust → Permissions → Setup">
+              <DCArtboard id="ob-1" label="01 · Trust promise" width={720} height={520}>
+                <OnboardingTrust theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="ob-2" label="02 · Permissions" width={720} height={520}>
+                <OnboardingPermissions theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="ob-3" label="03 · Vault & API key" width={720} height={520}>
+                <OnboardingSetup theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="ob-1l" label="01 · Trust (light)" width={720} height={520}>
+                <OnboardingTrust theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="docs" title="7 · Docs site" subtitle="Static docs for the vault/hark/docs folder · landing + doc template">
+              <DCArtboard id="docs-landing" label="Landing · dark" width={1280} height={900}>
+                <DocsLanding theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="docs-page" label="Doc page template · dark" width={1280} height={900}>
+                <DocPage theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="docs-landing-l" label="Landing · light" width={1280} height={900}>
+                <DocsLanding theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="speaker-tagging" title="9 · Speaker tagging — interactive" subtitle="Click the play buttons, type names, confirm/correct matches. The clicks are real.">
+              <DCArtboard id="st-modal" label="Tagging modal · pick suggestion or type · save" width={860} height={620}>
+                <SpeakerTaggingModal theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="st-auto" label="Auto-recognition · confirm Alice? · correct Ahmed · tag unknown" width={720} height={620}>
+                <SpeakerAutoRecognition theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="st-modal-light" label="Tagging modal · light" width={860} height={620}>
+                <SpeakerTaggingModal theme="light" />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="components" title="10 · Component sheet" subtitle="Atoms + molecules used across every screen">
+              <DCArtboard id="comp-dark" label="Dark" width={1100} height={2050}>
+                <ComponentSheet theme="dark" />
+              </DCArtboard>
+              <DCArtboard id="comp-light" label="Light" width={1100} height={2050}>
+                <ComponentSheet theme="light" />
+              </DCArtboard>
+            </DCSection>
+          </DesignCanvas>
+
+          <TweaksPanel>
+            <TweakSection label="Theme" />
+            <TweakColor label="Accent" value={t.accent} options={ACCENT_OPTIONS}
+                        onChange={(v) => setTweak("accent", v)} />
+            <TweakRadio label="Font stack" value={t.fontStack}
+                        options={["system", "inter"]}
+                        onChange={(v) => setTweak("fontStack", v)} />
+            <TweakSection label="Transcript" />
+            <TweakRadio label="Density" value={t.transcriptDensity}
+                        options={["comfortable", "compact"]}
+                        onChange={(v) => setTweak("transcriptDensity", v)} />
+            <TweakRadio label="Speaker labels" value={t.speakerStyle}
+                        options={["smallcaps", "pill", "name"]}
+                        onChange={(v) => setTweak("speakerStyle", v)} />
+            <TweakToggle label="Show translation" value={t.showTranslation}
+                         onChange={(v) => setTweak("showTranslation", v)} />
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    // Tiny utility: shade a hex toward black/white by a factor (-1..+1)
+    function shade(hex, amt) {
+      const h = hex.replace("#", "");
+      const num = parseInt(h.length === 3 ? h.split("").map(x=>x+x).join("") : h, 16);
+      let r = (num >> 16) & 0xff, g = (num >> 8) & 0xff, b = num & 0xff;
+      const t = amt < 0 ? 0 : 255;
+      const p = Math.abs(amt);
+      r = Math.round((t - r) * p) + r;
+      g = Math.round((t - g) * p) + g;
+      b = Math.round((t - b) * p) + b;
+      return "#" + ((1<<24) + (r<<16) + (g<<8) + b).toString(16).slice(1);
+    }
+
+    function CoverCard() {
+      const items = [
+        ["1 · Main window",    "3 takes"],
+        ["2 · Tray menu",      "3 states"],
+        ["3 · Post-meeting",   "2 themes"],
+        ["4 · Q&A panel",      "2 themes"],
+        ["5 · Privacy",        "2 themes"],
+        ["6 · Onboarding",     "4 screens"],
+        ["7 · Docs site",      "3 frames"],
+        ["8 · Components",     "2 themes"],
+        ["9 · Speaker tagging", "interactive"],
+      ];
+      return (
+        <div data-theme="dark" className="app-shell" style={{
+          width: 700, height: 520,
+          padding: 36,
+          borderRadius: 12,
+          background: "linear-gradient(135deg, #0e1116 0%, #1a1f27 100%)",
+          border: "1px solid #262c36",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="6" fill="#5eb3c8" />
+              <path d="M7 9v6M10 7v10M13 10v4M16 8v8M19 11v2" stroke="#0e1116" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, letterSpacing: "-0.015em", color: "#e8eaed" }}>Hark</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "#9aa3b2", padding: "2px 7px", border: "1px solid #262c36", borderRadius: 4, letterSpacing: "0.04em" }}>v0.9 · design pass</span>
+          </div>
+          <div style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 28, fontWeight: 600,
+            letterSpacing: "-0.025em",
+            lineHeight: 1.1,
+            color: "#e8eaed",
+            maxWidth: 540,
+            marginTop: 4,
+          }}>
+            A meeting tool you can actually trust with your work calls.
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#9aa3b2", maxWidth: 520 }}>
+            Eight deliverables, dark + light, on one canvas. Click any artboard to focus it.
+            Use Tweaks (top toolbar) to dial accent, font stack, and transcript density.
+          </div>
+          <div style={{ flex: 1 }} />
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "16px 18px",
+            paddingTop: 14,
+            borderTop: "1px solid #262c36",
+          }}>
+            {items.map(([t, s]) => (
+              <div key={t}>
+                <div style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "#5c6573",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: 3,
+                }}>{t}</div>
+                <div style={{ color: "#cfd5df", fontSize: 12 }}>{s}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
