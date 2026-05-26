@@ -72,4 +72,4 @@ This is a personal product first, market product second. The builder uses it eve
 
 - [Success metrics](02-success-metrics.md) — how we know we got this right
 - [Roadmap](03-roadmap.md) — what's in v1 vs deferred
-- [Handoff doc](file:///Users/quynhanhquach/Documents/project/hark/meetingmind-handoff.md) — full design rationale
+- [Handoff doc](~/Documents/project/hark/meetingmind-handoff.md) — full design rationale

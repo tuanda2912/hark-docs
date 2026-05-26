@@ -153,4 +153,4 @@ Before publishing any build:
 - [Performance benchmarks](10-performance-benchmarks.md) — RTF/latency harness
 - [Success metrics](../product/02-success-metrics.md) — what targets we're testing against
 - [User stories](../analysis/05-user-stories.md) — acceptance criteria source
-- `privacy-auditor` agent: `/Users/quynhanhquach/Documents/project/hark/.claude/agents/privacy-auditor.md`
+- `privacy-auditor` agent: `~/Documents/project/hark/.claude/agents/privacy-auditor.md`

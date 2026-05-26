@@ -92,7 +92,7 @@ graph TB
 
 ### Why Electron, not Tauri or SwiftUI?
 
-See [ADR-0001](file:///Users/quynhanhquach/Documents/project/hark/docs/decisions/0001-electron-over-tauri.md).
+See [ADR-0001](~/Documents/project/hark/docs/decisions/0001-electron-over-tauri.md).
 
 ---
 

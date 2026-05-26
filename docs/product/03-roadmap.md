@@ -7,7 +7,7 @@ last_updated: 2026-05-24
 
 # Roadmap
 
-Phased delivery aligned with the technical plan in the [handoff doc](file:///Users/quynhanhquach/Documents/project/hark/meetingmind-handoff.md). Each phase ends with a working artifact, not an intermediate one.
+Phased delivery aligned with the technical plan in the [handoff doc](~/Documents/project/hark/meetingmind-handoff.md). Each phase ends with a working artifact, not an intermediate one.
 
 ## v1 — "Trustworthy live transcription with a brain" (5–7 weeks)
 

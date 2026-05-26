@@ -15,7 +15,7 @@ These docs simulate the artifact set a four-person product team (PO / BA / Dev /
 1. **Future me** — to avoid re-litigating decisions and to onboard new sub-agents into the project.
 2. **Future company audience** — to show the full reasoning chain behind a product, not just the code.
 
-Every non-trivial decision also lives as an ADR in the source repo: `/Users/quynhanhquach/Documents/project/hark/docs/decisions/`.
+Every non-trivial decision also lives as an ADR in the source repo: `~/Documents/project/hark/docs/decisions/`.
 
 ## Document map
 
@@ -52,7 +52,7 @@ Every non-trivial decision also lives as an ADR in the source repo: `/Users/quyn
 
 ## Working agreements
 
-- **Single source of truth:** stack decisions live in the [handoff doc](file:///Users/quynhanhquach/Documents/project/hark/meetingmind-handoff.md). These docs explain *what* and *why for users*; the handoff explains *how it's built*.
+- **Single source of truth:** stack decisions live in the [handoff doc](~/Documents/project/hark/meetingmind-handoff.md). These docs explain *what* and *why for users*; the handoff explains *how it's built*.
 - **Living docs.** When something changes, update the doc in the same commit. Stale docs are worse than no docs.
 - **No code in docs unless it's contract.** API schemas yes; example UI snippets no.
 - **Vault is sacred.** This folder lives in the vault so it's git-versioned alongside meeting notes — but never auto-edited by the app.
