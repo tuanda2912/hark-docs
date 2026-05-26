@@ -1,0 +1,12 @@
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
+
+# Editor noise
+*.swp
+*.swo
+*~
+
+# Obsidian per-machine workspace state (when/if user adopts Obsidian on this vault)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
