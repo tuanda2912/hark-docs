@@ -2,7 +2,7 @@
 title: WebSocket API Contract — Engine ↔ UI
 owner: Dev
 status: draft
-last_updated: 2026-05-24
+last_updated: 2026-06-01
 ---
 
 # WebSocket API Contract
@@ -188,22 +188,54 @@ Fired after stop, diarization, and vault write all complete.
 }
 ```
 
-#### `speaker.tag` (UI → Engine)
+#### `speaker.rename` (UI → Engine) — IMPLEMENTED
 
-User assigns a real name to an unlabeled speaker.
+Renames one or more speakers in an already-saved meeting. This is a **post-save**
+operation: diarization runs as a post-`capture.stop` batch pass, so `"Speaker N"`
+labels exist **only** in the written vault markdown (live `segment.final` frames
+carry `speaker: null`). Renaming is therefore a re-render of that file with the
+user's chosen display names, followed by a git commit.
 
 ```json
 {
-  "type": "speaker.tag",
+  "type": "speaker.rename",
   "payload": {
     "session_id": "uuid",
-    "speaker_label": "Speaker 2",
-    "name": "Bob Smith"
+    "names": { "Speaker 1": "Alice", "Speaker 2": "Bob" }
   }
 }
 ```
 
-**Response:** `ack`, then engine writes `vault/.speakers/bob-smith.json`, retroactively renames segments in the meeting file, git commits.
+- `names` maps each speaker's **current** label (the key the engine knows — e.g.
+  `"Speaker 1"`, or a previously-applied name on a second edit) to a new display
+  name. The UI sends **only** the rows that actually changed; an empty map is a
+  no-op (the UI suppresses the send entirely).
+- `session_id` scopes the edit to one meeting. **MVP: only the single
+  most-recently-saved meeting is renameable.** A mismatch returns
+  `error{code:"MEETING_NOT_FOUND", recoverable:true}`.
+
+**Wire-encoding note (load-bearing):** the engine decodes inbound with
+`JSONDecoder.keyDecodingStrategy = .convertFromSnakeCase`. That strategy
+transforms **struct property names only** — `session_id` → `sessionId` — but does
+**not** touch the keys or values of a `[String:String]` dictionary. So the `names`
+map keys pass through verbatim: `"Speaker 1"` stays `"Speaker 1"` (and a key that
+happens to look like snake_case, e.g. `"speaker_one"`, would also pass through
+unchanged). Verified empirically. The TS `payload.names: Record<string,string>`
+and the Swift `SpeakerRenameCommand.names: [String:String]` are in exact lockstep.
+
+**Response:** `ack` on success (the engine has re-rendered the same vault file in
+place at its existing path and git-committed the change), or an `error` frame on
+failure (`MEETING_NOT_FOUND` if `session_id` isn't the most-recent meeting;
+`PROTOCOL_MISMATCH` for a malformed payload; `INTERNAL` if the rewrite/commit
+fails). There is **no** dedicated inbound success frame — the UI keys off `ack`.
+
+> **Supersedes the earlier `speaker.tag` sketch.** A never-implemented
+> single-label `speaker.tag {session_id, speaker_label, name}` previously lived
+> here. `speaker.rename` replaces it: it is **batch** (`names:{label:name}`),
+> matches the shipped engine + UI code, and does **not** (yet) write
+> `vault/.speakers/*.json` enrollment profiles — that voice-enrollment piece is
+> deferred to Phase 5.1. Speaker rename in the MVP only rewrites the meeting's own
+> markdown file.
 
 ---
 
