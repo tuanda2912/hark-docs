@@ -169,6 +169,71 @@ Emitted when VAD ends the utterance. The UI locks this segment.
 
 ### Diarization & speaker matching
 
+#### `meeting.transcript` (Engine → UI) — IMPLEMENTED
+
+Fired **once** per meeting at `capture.stop`, after diarization + vault write,
+**JUST BEFORE** [`meeting.saved`](#meetingsaved-engine--ui). It carries the
+**deduped, "Speaker N"-labeled** final transcript — **byte-for-byte the same set
+of utterances written to the vault markdown body** (built from the identical
+`[VaultWriter.Utterance]` set the writer was handed; the engine does not re-derive
+a different set). Its purpose is to let the UI **back-annotate speakers onto the
+on-screen transcript**.
+
+```json
+{
+  "type": "meeting.transcript",
+  "payload": {
+    "session_id": "uuid",
+    "utterances": [
+      { "id": "u0", "t_start": 12.34, "text": "We should consider the Camunda migration.", "speaker": "Speaker 1" },
+      { "id": "u1", "t_start": 18.90, "text": "Agreed — let's revisit timing next sprint.", "speaker": "Speaker 2" }
+    ]
+  }
+}
+```
+
+- **Why it exists — offline diarization.** Diarization is a **post-stop batch
+  pass**, not a live one. Every live [`segment.final`](#segmentfinal-engine--ui)
+  ships `speaker: null` (and `segment.partial` carries no speaker at all). So until
+  this frame, speaker labels existed **only** in the written vault file and in the
+  [`meeting.saved`](#meetingsaved-engine--ui) roster — never back on the live
+  on-screen transcript. This frame closes that gap.
+- **Full replacement, not a merge.** The UI treats `utterances` as a **complete
+  replacement** of the displayed transcript for this `session_id`: it clears the
+  live segment map and repopulates it from `utterances`, each rendered as a
+  finalized line with its `speaker` set. It does **not** reconcile against the live
+  `utterance_id`s.
+- **`id` is fresh, NOT a live `utterance_id`.** Each `id` is an index-based stable
+  key minted for this frame (`"u0"`, `"u1"`, … in chronological / `t_start` order)
+  for the UI's `@for` track. It deliberately does **not** correspond to any live
+  `utterance_id` from `segment.partial`/`segment.final`, because the live utterances
+  were re-segmented and deduped on the way to the vault. Do not try to match these
+  ids back to live segments — the live set is being thrown away and replaced.
+- **Fields.** `id` (string), `t_start` (number, seconds since capture start),
+  `text` (string), `speaker` (string — the `"Speaker N"` label). **All four are
+  non-optional / non-nullable** on both sides — there is no `null` here (contrast
+  `segment.final.speaker`, which is always `null` during a meeting). There is no
+  `t_end` / `language` / `translation` on the wire; the UI point-anchors each line
+  at `t_start` and leaves those null locally.
+- **Relationship to `meeting.saved`.** Same `session_id` (and the same value the
+  later [`speaker.rename`](#speakerrename-ui--engine--implemented) command targets),
+  scoping the replacement to one meeting. `meeting.transcript` carries the **body**
+  (the labeled lines); `meeting.saved`, sent immediately after, carries the
+  **roster** (`speakers[]`), `vault_path`, and `stats`. The labels in
+  `meeting.transcript.utterances[].speaker` are exactly the roster labels in
+  `meeting.saved.speakers[].label`.
+- **Wire-encoding note.** `session_id` ⇄ Swift `sessionId` and `t_start` ⇄ Swift
+  `tStart` via the outbound encoder's `.convertToSnakeCase`; `id` / `text` /
+  `speaker` / `utterances` are single-word and pass through unchanged. Because
+  every field is non-optional, the synthesized Swift `encode(to:)` is sufficient —
+  no explicit `encodeNil` is needed (unlike `segment.final` / `meeting.saved`'s
+  nested nullables).
+- **Not replayed on reconnect.** This is a one-shot event tied to a stop. The
+  engine does **not** retain a snapshot to replay to a client that connects later
+  (unlike `meta.model_progress`). A UI that reconnects after a meeting was saved
+  re-derives that meeting's content by reading the vault file directly, not from
+  this frame.
+
 #### `meeting.saved` (Engine → UI)
 
 Fired after stop, diarization, and vault write all complete.
