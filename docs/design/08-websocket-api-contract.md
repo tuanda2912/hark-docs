@@ -2,7 +2,7 @@
 title: WebSocket API Contract — Engine ↔ UI
 owner: Dev
 status: draft
-last_updated: 2026-06-01
+last_updated: 2026-06-02
 ---
 
 # WebSocket API Contract
@@ -306,6 +306,80 @@ UI renders an inline card next to the live transcript.
   }
 }
 ```
+
+**`model_loaded` is `"(loading)"` until the model is ready.** harkd brings up the
+WebSocket + writes the port file *before* the model finishes loading, so the very
+first client to connect on a cold start sees `model_loaded: "(loading)"` here, and
+then a separate `meta.ready` frame once load completes (see below). A client that
+connects *after* the model is already loaded gets the real model name in
+`meta.hello` and **no** `meta.ready`. The UI treats `model_loaded !== "(loading)"`
+in `meta.hello` as "already ready". The `capabilities` array advertises only what
+this build actually ships (current builds: `["diarization"]`; translation is not
+built yet, so it is deliberately omitted — keep it honest).
+
+#### `meta.ready` (Engine → UI, unsolicited)
+
+```json
+{ "type": "meta.ready", "payload": { "model_loaded": "whisperkit-large-v3-turbo" } }
+```
+
+Pushed once, the moment the model finishes loading, to **every already-connected
+client** that saw `meta.hello.model_loaded === "(loading)"`. This is the
+**terminal** readiness signal — the UI ungates Start on it. It also clears any
+in-flight `meta.model_progress` (the warm-up overlay tears down). Not sent to
+clients that connected after load (they already learned the model name from
+`meta.hello`).
+
+#### `meta.model_progress` (Engine → UI, unsolicited — cold-start warm-up)
+
+Emitted **only** during a cold start, while harkd downloads and ANE-compiles the
+speech (WhisperKit, ~626 MB) and diarizer (FluidAudio CoreML) bundles — i.e. in
+the window *before* `meta.ready`. Drives the first-run "Preparing Hark" overlay so
+a fresh install doesn't look hung. **Purely additive: it never affects readiness.**
+`meta.ready` remains the single terminal readiness signal.
+
+```json
+{
+  "type": "meta.model_progress",
+  "payload": {
+    "phase": "downloading_speech",
+    "fraction": 0.42,
+    "detail": "Downloading speech model"
+  }
+}
+```
+
+- `phase` (string) — a stable machine token, one of:
+  `"downloading_speech" | "optimizing_speech" | "downloading_diarizer" | "optimizing_diarizer"`.
+  It is a payload **value**, not a key, so the engine's `.convertToSnakeCase` key
+  strategy leaves it untouched — the literal snake_case form on the wire is what is
+  shown above.
+- `fraction` (number **or `null`**) — `0..1` for the byte-counted **download**
+  phases. **`null` for the ANE compile / optimize phases**, which expose no
+  progress API. This distinction is **load-bearing**: the UI renders a determinate
+  progress **bar** for a numeric `fraction` and an indeterminate **spinner** when
+  `fraction` is `null`. The engine encodes the null case as an explicit JSON
+  `"fraction": null` (not a dropped key — same explicit-`encodeNil` pattern as
+  `SegmentPayload`/`meeting.saved`'s nested nullables), so the UI can tell
+  "indeterminate" (`null`) apart from "absent". Do not let the key be omitted.
+- `detail` (string) — a human-readable label to display, e.g.
+  `"Downloading speech model"`. Display-only; do not parse it.
+
+**Throttling:** the underlying loader callbacks (FluidAudio's per-byte download
+callback, WhisperKit's per-1% callback) fire very frequently. The caller throttles
+**before** the actor hop; `emitModelProgress` itself just snapshots + broadcasts.
+
+**Snapshot replay to late clients:** the engine retains the most recent
+`meta.model_progress` and replays it (once) to a client that connects mid-download,
+right after `meta.hello`, so a UI opened part-way through a cold start sees the
+current phase/fraction immediately instead of waiting for the next callback. Same
+spirit as `meta.ready` being pushed to already-connected clients. The snapshot is
+cleared once `meta.ready` fires; late progress callbacks arriving after readiness
+are dropped (not re-broadcast, and they do not resurrect the snapshot).
+
+**UI teardown:** the UI clears its `meta.model_progress` state — and thus the
+overlay — on `meta.ready` and on socket close (a reconnect re-derives warm-up
+state from a fresh `meta.hello`).
 
 #### `meta.heartbeat` (bidirectional, every 5s)
 
