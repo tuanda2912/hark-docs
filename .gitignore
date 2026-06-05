@@ -7,6 +7,9 @@
 *.swo
 *~
 
-# Obsidian per-machine workspace state (when/if user adopts Obsidian on this vault)
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
+# Obsidian: ignore only the volatile per-machine state (matched at any depth, since
+# the vault lives at wiki/.obsidian/, not the repo root).
+# .obsidian/graph.json (the colored graph-view recipe), app.json, appearance.json,
+# and core-plugins.json ARE tracked so the configured graph travels with the repo.
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
