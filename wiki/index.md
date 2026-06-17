@@ -2,7 +2,7 @@
 
 ## Overview
 - [[overview]] — Hark is a local-first, macOS-only meeting transcription app — a Swift sidecar (harkd) does on-device ASR/diarization/RAG and an Electron+Angular shell drives it over a loopback WebSocket, with the only content egress being an explicit, user-invoked LLM edge.
-- [[onboarding]] — a newcomer's reading path through the source: project overview → 7 layers → key concepts → the 12-step guided tour → file map → complexity hotspots. Generated from the knowledge graph; also mirrored to the code repo's `docs/ONBOARDING.md`.
+- [[onboarding]] — a newcomer's reading path through the source: project overview → 7 layers → key concepts → the 14-step guided tour → file map → complexity hotspots. Generated from the knowledge graph; also mirrored to the code repo's `docs/ONBOARDING.md`.
 
 ## Subsystems
 - [[subsystems/engine-harkd|Engine / harkd]] — The long-lived Swift sidecar that owns the whole per-meeting lifecycle: an EngineSession actor wiring capture → VAD → 30s/5s sliding window → WhisperKit (ANE) → reconciliation → WS emit, with single-window backpressure, and an offline diarization + vault-write pass at capture.stop.
@@ -33,6 +33,7 @@
 - [[concepts/pluggable-retrieval|Pluggable retrieval]] — Vault retrieval sits behind one RetrievalBackend interface with two user-chosen implementations — built-in (the engine's CoreML embedder + brute-force offset-only index, default) or external (a user-run loopback service, recommended as an MCP server) — while the downstream redact→LLM→log→citations path stays identical regardless of backend.
 - [[concepts/privacy-data-control|Privacy & data-control (opt-in gates)]] — The governance model for the three sensitive artifacts — transcript (always, vault-local) vs audio + voiceprints (opt-in, default OFF) — enforced by the keepAudio and rememberSpeakers flags sent on capture.start, surfaced for informed consent in onboarding, reversible in Settings → Privacy, and gitignored so they never travel a remote.
 - [[concepts/markdown-second-brain|Markdown second-brain & roadmap]] — The vault is a plain, Obsidian-compatible, git-backed markdown folder the user owns — the substrate for vault-wide RAG, semantic search, and LLM extraction — and the eventual in-app feature this very project wiki dogfoods; tracks the Phase 0–7 roadmap (currently Phase 7 packaging/notarization, ~60%).
+- [[concepts/design-system|Visual design system — the "Heard ripples" identity]] — Hark's look is one token file (`tokens.css`) plus the concentric-ripple brand mark (`RipplesComponent`), held to a native-mac bar: token-driven theming, a shared motion vocabulary + tactile/focus states (reduced-motion gated), `.col-title`/`.status-pill` headers, and deliberate non-defaults (system SF font, tight radii, one accent, no remote fonts/assets — the CSP forbids them).
 
 ## Decisions
 - [[decisions/foundations|Foundations (ADR-0001/0002/0003/0004/0005/0013)]] — The locked stack: Electron over Tauri (0001), macOS-only Apple-Silicon scope (0002), a Swift+WhisperKit engine over Rust (0003), no cloud ASR ever (0004), Phase 0 RTF validated at ~0.075 (0005), and MIT license (0013) — none to be re-litigated.

@@ -103,7 +103,7 @@ WS directly (loopback already gates external access — [ADR-0010](https://githu
 ## Architectural layers (knowledge graph)
 
 The `understand-anything` knowledge graph (`hark/.understand-anything/knowledge-graph.json`
-— 280 nodes / 445 edges over 127 source files, commit `8efdfde`, code-only scope) groups
+— 251 nodes / 414 edges over 134 source files, commit `8e7d009`, code-only scope) groups
 the code into **7 layers**. Each subsystem page below carries a verified `## Code map`
 (files, key types/functions, pinning tests, and cross-subsystem edges) drawn from it.
 

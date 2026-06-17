@@ -2,9 +2,9 @@
 type: subsystem
 title: UI shell — Angular renderer, services & panels
 status: current
-sources: [ADR-0001, ADR-0010, ADR-0014, ADR-0022, ADR-0023, ADR-0024, ui/src/app/app.component.ts, ui/src/main.ts, ui/src/app/app.config.ts, ui/src/app/services/preferences.service.ts, ui/src/app/services/theme.service.ts, ui/src/app/services/llm.service.ts, ui/src/app/services/retrieval.service.ts, ui/src/app/services/translation-job.service.ts, ui/src/app/components/settings-panel.component.ts, ui/src/app/components/onboarding.component.ts, ui/src/app/components/post-meeting-review.component.ts, ui/tailwind.config.js, ui/src/styles/tokens.css, ui/src/styles.css, ui/src/index.html]
-updated: 2026-06-05
-tags: [ui, angular, electron, signals, renderer, privacy]
+sources: [ADR-0001, ADR-0010, ADR-0014, ADR-0022, ADR-0023, ADR-0024, ui/src/app/app.component.ts, ui/src/main.ts, ui/src/app/app.config.ts, ui/src/app/services/preferences.service.ts, ui/src/app/services/theme.service.ts, ui/src/app/services/llm.service.ts, ui/src/app/services/retrieval.service.ts, ui/src/app/services/translation-job.service.ts, ui/src/app/components/settings-panel.component.ts, ui/src/app/components/onboarding.component.ts, ui/src/app/components/post-meeting-review.component.ts, ui/tailwind.config.js, ui/src/app/components/ripples.component.ts, ui/src/styles/tokens.css, ui/src/styles.css, ui/src/index.html]
+updated: 2026-06-17
+tags: [ui, angular, electron, signals, renderer, privacy, design]
 ---
 
 # UI shell — Angular renderer, services & panels
@@ -61,7 +61,8 @@ and the styling/config layer.
 - `ui/src/app/components/speaker-tag.component.ts` — OnPush atom: colored dot + name + chevron speaker chip, italic untagged variant, token-only styling.
 - `ui/src/app/components/citation-chip.component.ts` — tiny numbered-citation marker chip, optionally interactive (emits select).
 - `ui/src/app/components/status-banner.component.ts` — presentational status/warning/error banner with severity-based color.
-- `ui/src/app/components/eyebrow.component.ts` — minimal eyebrow/label component projecting content for section headers.
+- `ui/src/app/components/eyebrow.component.ts` — minimal eyebrow/label component projecting content for in-panel sub-section labels.
+- `ui/src/app/components/ripples.component.ts` — the reusable "Heard ripples" brand mark (concentric SVG rings + core, accent-tinted, breathing at rest / faster while listening); the resting + listening motif across empty states and the tray. See [[concepts/design-system]].
 
 *Renderer services*
 - `ui/src/app/services/preferences.service.ts` — signals store for audio/theme/privacy/RAG/onboarding prefs; loads + persists via the hark bridge (ADR-0014).
@@ -203,6 +204,15 @@ recomputation** — `ThemeService` sets `data-theme` and the CSS cascade repaint
 (ADR-0010 §2). The speaker palette (`--sp-1`…`--sp-6`) and status semantics
 (recording/warning/success/cloud) are shared across themes.
 
+`tokens.css` also carries the shared **visual design system** (2026-06-17): the
+motion vocabulary (`--ease-spring` / `--ease-out`, `--dur-press` / `--dur-enter`),
+the `.col-title` + `.status-pill` section-header classes (which replaced the flat
+all-caps eyebrows at the top of each column), tactile press + `:focus-visible`
+rings, and the reusable `RipplesComponent` "Heard ripples" brand mark that anchors
+every empty/listening state. All motion is gated by `prefers-reduced-motion`, and
+the identity stays native-mac (system SF font, tight radii, one slate-blue accent,
+no remote fonts/assets — the CSP forbids them). Full rationale: [[concepts/design-system]].
+
 ## Strict CSP & no-telemetry posture
 
 `index.html` ships a `<meta http-equiv="Content-Security-Policy">` (per ADR-0001's
@@ -271,5 +281,6 @@ a bootstrap failure log (local).
 - **Graceful outside Electron.** Every `window.hark?.…` call guards for a missing
   bridge so bare `ng serve` stays functional (in-memory defaults, no persistence).
 
-See also [[overview]] for the subsystem map and [[glossary]] for terms
+See also [[concepts/design-system]] for the "Heard ripples" visual identity +
+motion vocabulary, [[overview]] for the subsystem map, and [[glossary]] for terms
 (`data-theme`, signals, standalone component, squircle, …).

@@ -176,8 +176,9 @@ global hairball — the best way to actually learn the architecture node by node
 
 The first build ingested the docs + a subsystem map; the **2026-06-05 rebuild** then
 grounded every subsystem page in the `understand-anything` knowledge graph
-(`hark/.understand-anything/knowledge-graph.json` — 280 nodes / 445 edges over 127
-source files, 7 layers, a 12-step tour; commit `8efdfde`, **code-only** scope). Each
+(`hark/.understand-anything/knowledge-graph.json` — 251 nodes / 414 edges over 134
+source files, 7 layers, a 14-step tour; commit `8e7d009`, **code-only** scope;
+stats refreshed by the 2026-06-17 incremental pass after the UI redesign). Each
 subsystem page now carries a verified `## Code map` (files + summaries, key
 types/functions with line ranges, pinning XCTest suites, deduped cross-subsystem
 edges). Caveat: the graph does not resolve Swift *module imports*, so engine cross-file
