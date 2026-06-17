@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Strategy · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a class="active" href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Test Strategy</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="test-strategy">Test Strategy</h1>
+<p>What we test, how, when. Solo project, so the test pyramid is honest: lots of automated unit + privacy tests, light integration tests, <strong>manual dogfood as the system test layer</strong>. Dogfooding 4h/day on real meetings catches what no synthetic test will.</p>
+<h2 id="test-pyramid-hark-flavored">Test pyramid (Hark-flavored)</h2>
+<pre><code>                    ▲
+                    │ Manual dogfood (<span class="hljs-number">4</span> weeks daily <span class="hljs-keyword">use</span>)
+                    │ — the <span class="hljs-keyword">real</span> system test
+                ────┼────
+                    │ Integration tests
+                    │ — WS contract, vault writes, <span class="hljs-keyword">end</span>-to-<span class="hljs-keyword">end</span> flow
+                ────┼────
+                    │ <span class="hljs-keyword">Unit</span> tests + Privacy tests
+                    │ — heavy: audio math, redactor, speaker matcher, RAG retrieval
+                    └──────────────────────────────────────────────►
+</code></pre>
+<h2 id="test-types--where-they-live">Test types &amp; where they live</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Tool</th>
+<th>Location</th>
+<th>Run when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Swift unit</td>
+<td><code>swift test</code> (XCTest)</td>
+<td><code>engine/Tests/</code></td>
+<td>Pre-commit hook on engine files; CI on push</td>
+</tr>
+<tr>
+<td>TypeScript unit</td>
+<td>Vitest</td>
+<td><code>ui/src/**/*.spec.ts</code></td>
+<td>Pre-commit hook on UI files; CI on push</td>
+</tr>
+<tr>
+<td>Privacy audit</td>
+<td><code>privacy-auditor</code> agent</td>
+<td>n/a — runs against the diff</td>
+<td>Before every merge to <code>main</code>, before every release</td>
+</tr>
+<tr>
+<td>WebSocket contract</td>
+<td>Custom harness, both sides</td>
+<td><code>tests/contract/</code></td>
+<td>CI on push</td>
+</tr>
+<tr>
+<td>Performance / RTF</td>
+<td>Phase 0 harness + variants</td>
+<td><code>bench/</code></td>
+<td>Manually before release; after any model or pipeline change</td>
+</tr>
+<tr>
+<td>Privacy regression</td>
+<td>Network sniffer (Little Snitch / pcap)</td>
+<td><code>tests/privacy/</code></td>
+<td>Before every release</td>
+</tr>
+<tr>
+<td>Manual smoke</td>
+<td>Checklist</td>
+<td>this doc</td>
+<td>Before every release</td>
+</tr>
+<tr>
+<td>Dogfood (real meetings)</td>
+<td>Reality</td>
+<td>Daily</td>
+<td>Continuous</td>
+</tr>
+</tbody></table>
+<h2 id="per-epic-test-focus">Per-epic test focus</h2>
+<h3 id="epic-a--live-capture">Epic A — Live capture</h3>
+<ul>
+<li>Unit: mixer math (mic + system → 16kHz mono), VAD boundary detection</li>
+<li>Integration: 60s synthetic audio → segments out, latency measured</li>
+<li><strong>Privacy: assert audio bytes never reach disk outside the engine session temp dir</strong></li>
+<li>Manual: real meeting, observe partial → final transitions don&#39;t flicker</li>
+</ul>
+<h3 id="epic-b--speakers">Epic B — Speakers</h3>
+<ul>
+<li>Unit: cosine similarity threshold, embedding serialization round-trip</li>
+<li>Integration: 3-person mock audio → diarization → 3 clusters → manual tag → persist → re-run → auto-resolve</li>
+<li><strong>Privacy: speaker embeddings never appear in any network payload</strong></li>
+</ul>
+<h3 id="epic-c--translation">Epic C — Translation</h3>
+<ul>
+<li>Unit: NLLB-200 produces output for TH↔EN pairs (snapshot test, not quality)</li>
+<li>Integration: high-quality mode round-trips through Claude API (mocked)</li>
+<li><strong>Privacy: when in fast mode, zero network calls fire</strong></li>
+</ul>
+<h3 id="epic-d--vault">Epic D — Vault</h3>
+<ul>
+<li>Unit: markdown frontmatter serialization, slug generation, term index incremental update</li>
+<li>Integration: write meeting → git commit → verify content + commit log</li>
+<li>Manual: vault stays editable in Obsidian throughout</li>
+</ul>
+<h3 id="epic-e--intelligence-claude-api">Epic E — Intelligence (Claude API)</h3>
+<ul>
+<li>Unit: prompt builder, citation extraction, redactor</li>
+<li>Integration: summarize a fixture meeting (Claude mocked) → assert summary sections written to vault</li>
+<li><strong>Privacy: redactor strips emails/phones/IDs; verified by fuzzing</strong></li>
+<li><strong>Privacy: API key never appears in logs (regex check on log files)</strong></li>
+<li>Manual: real meeting summaries are useful (Tier 2 metric)</li>
+</ul>
+<h3 id="epic-f--trust--privacy">Epic F — Trust &amp; Privacy</h3>
+<ul>
+<li>See <a href="#privacy-checklist">Privacy checklist</a> below — its own layer</li>
+</ul>
+<h2 id="privacy-checklist">Privacy checklist</h2>
+<p><strong>Non-negotiable. A release with ANY failure here does not ship.</strong></p>
+<p>Run before every release. Failures block merge.</p>
+<h3 id="static-analysis">Static analysis</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <code>privacy-auditor</code> agent returns 0 BLOCKER findings on the full codebase diff vs. last release</li>
+<li><input disabled="" type="checkbox"> No <code>fetch</code>, <code>axios</code>, <code>URLSession</code>, <code>http.request</code> outside the approved network paths:<ul>
+<li>Anthropic SDK (Electron Main only)</li>
+<li>electron-updater (configured update server only)</li>
+<li>WhisperKit / FluidAudio model download URLs (Argmax + HuggingFace, first run only)</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Grep: zero <code>sk-ant-</code> literals in source</li>
+<li><input disabled="" type="checkbox"> Grep: zero <code>console.log</code> / <code>print</code> / <code>os_log</code> of <code>transcript</code>, <code>audio</code>, <code>embedding</code> variable contents</li>
+<li><input disabled="" type="checkbox"> CSP for Electron renderer: <code>default-src &#39;self&#39;; script-src &#39;self&#39;; connect-src &#39;self&#39; ws://127.0.0.1:*</code> (no wildcards)</li>
+</ul>
+<h3 id="runtime-observation">Runtime observation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Run a 30-min mock meeting with Little Snitch (or <code>tcpdump</code>) recording all outbound traffic</li>
+<li><input disabled="" type="checkbox"> Verify: outbound destinations are ONLY Anthropic API (and only when user invoked an action) + (first-run only) model download</li>
+<li><input disabled="" type="checkbox"> Verify: zero outbound traffic during idle, during recording, during playback</li>
+<li><input disabled="" type="checkbox"> Verify: zero traffic to analytics domains (Google, Segment, Mixpanel, Amplitude, Sentry, etc.)</li>
+</ul>
+<h3 id="filesystem">Filesystem</h3>
+<ul>
+<li><input disabled="" type="checkbox"> No writes outside <code>vault/hark/</code>, <code>~/Library/Application Support/Hark/</code>, <code>~/Library/Logs/Hark/</code>, <code>~/Library/Caches/Hark/</code>, <code>NSTemporaryDirectory()</code></li>
+<li><input disabled="" type="checkbox"> Logs in <code>~/Library/Logs/Hark/</code> contain zero transcript text, zero PII (grep audit)</li>
+<li><input disabled="" type="checkbox"> Speaker embeddings exist only in <code>vault/.speakers/</code></li>
+</ul>
+<h3 id="redactor">Redactor</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Fuzz redactor with 1000 synthetic transcripts containing emails, phones, Thai national IDs, EU IBANs — 0 false negatives on these patterns</li>
+<li><input disabled="" type="checkbox"> Document false-positive rate (acceptable &lt; 5%)</li>
+<li><input disabled="" type="checkbox"> Redaction log written for every API call when redact-before-send is ON</li>
+</ul>
+<h3 id="api-key">API key</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Stored in Keychain via <code>security add-generic-password</code>, not in files</li>
+<li><input disabled="" type="checkbox"> Never logged, never written to crash dumps</li>
+<li><input disabled="" type="checkbox"> Cleared from memory after each API call (best-effort)</li>
+</ul>
+<h2 id="test-data">Test data</h2>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Purpose</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fixtures/short-en.wav</code></td>
+<td>30s English-only sample</td>
+<td><code>engine/Tests/Fixtures/</code></td>
+</tr>
+<tr>
+<td><code>fixtures/code-switch.wav</code></td>
+<td>60s TH↔EN code-switching</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>fixtures/3speakers.wav</code></td>
+<td>90s with 3 distinct voices</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>fixtures/silence.wav</code></td>
+<td>30s ambient room noise</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>fixtures/meeting-transcript.md</code></td>
+<td>Realistic transcript for summary tests</td>
+<td><code>tests/fixtures/</code></td>
+</tr>
+</tbody></table>
+<p><strong>Privacy of fixtures:</strong> all fixtures are public-domain audio (LibriSpeech, Common Voice) or synthetic (Bark / Mimic) — <strong>never real meeting recordings</strong>. Even the developer&#39;s own.</p>
+<h2 id="mocking-strategy">Mocking strategy</h2>
+<ul>
+<li><strong>Anthropic SDK:</strong> replaced with a fake that records prompts and returns canned responses. Real API hit only in a single &quot;smoke&quot; integration test run manually before release.</li>
+<li><strong>ScreenCaptureKit:</strong> wrapped behind an <code>AudioSource</code> protocol; tests inject a file-reader implementation.</li>
+<li><strong>Vault git:</strong> wrapped behind a <code>VaultRepo</code> protocol; tests use <code>tmp/</code> and assert commit messages.</li>
+</ul>
+<h2 id="release-checklist-manual">Release checklist (manual)</h2>
+<p>Before publishing any build:</p>
+<ol>
+<li><input disabled="" type="checkbox"> All automated tests green on CI</li>
+<li><input disabled="" type="checkbox"> Privacy checklist green (above)</li>
+<li><input disabled="" type="checkbox"> Manual smoke: 10-min real meeting, summary generated, Q&amp;A returns sensible answer</li>
+<li><input disabled="" type="checkbox"> Cold-start time measured ≤ 5s</li>
+<li><input disabled="" type="checkbox"> RAM during 30-min meeting ≤ 4 GB</li>
+<li><input disabled="" type="checkbox"> No new ADRs that contradict CLAUDE.md hard rules</li>
+<li><input disabled="" type="checkbox"> CHANGELOG updated</li>
+<li><input disabled="" type="checkbox"> Build signed + notarized; <code>spctl --assess</code> passes</li>
+<li><input disabled="" type="checkbox"> Test the signed build on a clean macOS user account (Gatekeeper realism)</li>
+<li><input disabled="" type="checkbox"> Tag release in git; archive the signed <code>.app</code> outside the repo</li>
+</ol>
+<h2 id="out-of-scope-for-testing">Out of scope for testing</h2>
+<ul>
+<li><strong>Cross-browser compatibility</strong> — single Chromium via Electron</li>
+<li><strong>Cross-OS compatibility</strong> — macOS-only</li>
+<li><strong>Load / stress beyond 4-hour single meeting</strong> — not the target use case</li>
+<li><strong>Localization correctness for translation quality</strong> — we surface raw model output; quality is the model&#39;s problem, not Hark&#39;s</li>
+<li><strong>Penetration testing</strong> — local-only attack surface, deferred until/unless we ship a server component (we won&#39;t, in v1)</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="10-performance-benchmarks.html">Performance benchmarks</a> — RTF/latency harness</li>
+<li><a href="../product/02-success-metrics.html">Success metrics</a> — what targets we&#39;re testing against</li>
+<li><a href="../analysis/05-user-stories.html">User stories</a> — acceptance criteria source</li>
+<li><code>privacy-auditor</code> agent: <code>~/Documents/project/hark/.claude/agents/privacy-auditor.md</code></li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#test-pyramid-hark-flavored">Test pyramid (Hark-flavored)</a>
+<a class="toc-l2" href="#test-types--where-they-live">Test types &amp;amp; where they live</a>
+<a class="toc-l2" href="#per-epic-test-focus">Per-epic test focus</a>
+<a class="toc-l3" href="#epic-a--live-capture">Epic A — Live capture</a>
+<a class="toc-l3" href="#epic-b--speakers">Epic B — Speakers</a>
+<a class="toc-l3" href="#epic-c--translation">Epic C — Translation</a>
+<a class="toc-l3" href="#epic-d--vault">Epic D — Vault</a>
+<a class="toc-l3" href="#epic-e--intelligence-claude-api">Epic E — Intelligence (Claude API)</a>
+<a class="toc-l3" href="#epic-f--trust--privacy">Epic F — Trust &amp;amp; Privacy</a>
+<a class="toc-l2" href="#privacy-checklist">Privacy checklist</a>
+<a class="toc-l3" href="#static-analysis">Static analysis</a>
+<a class="toc-l3" href="#runtime-observation">Runtime observation</a>
+<a class="toc-l3" href="#filesystem">Filesystem</a>
+<a class="toc-l3" href="#redactor">Redactor</a>
+<a class="toc-l3" href="#api-key">API key</a>
+<a class="toc-l2" href="#test-data">Test data</a>
+<a class="toc-l2" href="#mocking-strategy">Mocking strategy</a>
+<a class="toc-l2" href="#release-checklist-manual">Release checklist (manual)</a>
+<a class="toc-l2" href="#out-of-scope-for-testing">Out of scope for testing</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

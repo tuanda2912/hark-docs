@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Journeys · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a class="active" href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">User Journeys</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="user-journeys">User Journeys</h1>
+<p>End-to-end flows from the user&#39;s perspective. Each journey names the actor, trigger, happy path, failure paths, and the data that crosses the trust boundary (i.e., goes to Claude API).</p>
+<h2 id="legend">Legend</h2>
+<ul>
+<li>🟢 <strong>Local-only</strong> — happens on the Mac, no network</li>
+<li>🔵 <strong>Claude API</strong> — explicit user-invoked, transcript text only (never audio)</li>
+<li>🟡 <strong>Decision point</strong> — user must choose something</li>
+</ul>
+<hr>
+<h2 id="journey-1-first-launch--onboarding">Journey 1: First launch &amp; onboarding</h2>
+<p><strong>Actor:</strong> New user (you)
+<strong>Trigger:</strong> Opens Hark.app for the first time
+<strong>Frequency:</strong> Once</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Trust boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Welcome screen explains the local-first promise in 3 sentences</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Prompt: grant ScreenCapture permission (system audio)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Prompt: grant Microphone permission</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>4</td>
+<td>🟡 Choose vault folder (default: <code>~/Documents/vault/hark</code>)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>5</td>
+<td>🟡 Paste Anthropic API key (or skip and disable Claude features)</td>
+<td>🟢 — key stored in macOS Keychain</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Background: WhisperKit downloads large-v3-turbo CoreML bundle (~800 MB) with progress bar</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Background: NLLB-200 translation model downloads (~600 MB) if user enabled translation</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Quick tour: &quot;press ⌘⇧R to start, ⌘⇧B to bookmark, ⌘⇧S to stop&quot;</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Lands in the tray menu with &quot;Start recording&quot; available</td>
+<td>🟢</td>
+</tr>
+</tbody></table>
+<p><strong>Failure modes:</strong></p>
+<ul>
+<li>Permission denied → graceful explanation + button to open System Settings</li>
+<li>Model download fails → retry button, manual download link</li>
+<li>No API key → Claude features grayed out with tooltip &quot;Paste a key in Settings to enable&quot;</li>
+</ul>
+<hr>
+<h2 id="journey-2-joining-a-meeting-the-main-flow">Journey 2: Joining a meeting (the main flow)</h2>
+<p><strong>Actor:</strong> Regular user mid-workday
+<strong>Trigger:</strong> A meeting starts (Teams/Zoom/etc.) — user clicks Hark tray icon
+<strong>Frequency:</strong> 3–6 times per day</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor User
+    participant Tray <span class="hljs-keyword">as</span> Tray Icon
+    participant UI <span class="hljs-keyword">as</span> Main Window
+    participant Engine <span class="hljs-keyword">as</span> Swift Engine
+    participant Vault <span class="hljs-keyword">as</span> Vault (~/Documents/vault/hark)
+
+    U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;Tray: Click <span class="hljs-string">&quot;Start recording&quot;</span>
+    T<span class="hljs-function"><span class="hljs-title">ray</span>-&gt;</span>&gt;Engine: start capture (mic + system audio)
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;UI: WS: state=recording
+    UI-&gt;&gt;User: Live transcript view opens, captions stream <span class="hljs-built_in">in</span>
+    Note over Engine,UI: Every <span class="hljs-number">200</span>ms: partial segment&lt;br/&gt;Every VAD boundary: final segment
+
+    <span class="hljs-keyword">loop</span> During meeting
+        U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;UI: ⌘⇧B → bookmark moment
+        UI-&gt;&gt;Engine: WS: bookmark @ timestamp
+        E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;Engine: Store flag <span class="hljs-built_in">in</span> session
+    end
+
+    U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;Tray: Click <span class="hljs-string">&quot;Stop recording&quot;</span> (<span class="hljs-built_in">or</span> ⌘⇧S)
+    T<span class="hljs-function"><span class="hljs-title">ray</span>-&gt;</span>&gt;Engine: stop capture
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;Engine: Run diarization (FluidAudio)
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;Vault: Write meetings/<span class="hljs-number">2026</span>-<span class="hljs-number">05</span>-<span class="hljs-number">24</span>-{<span class="hljs-built_in">title</span>}.md
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;UI: WS: meeting saved, summary pending
+    UI-&gt;&gt;User: Toast <span class="hljs-string">&quot;Meeting saved. Summarize?&quot;</span>
+</code></pre>
+<p><strong>Steps in detail:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Trust boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>User clicks tray icon, picks &quot;Start recording&quot;</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Engine begins capturing system audio (ScreenCaptureKit) + mic (AVAudioEngine), mixed to 16kHz mono PCM</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Engine streams audio chunks through Silero VAD, then WhisperKit</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Partial transcripts appear in main window with &lt;1.5s latency, updated in place as more context arrives</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Final segments persist with speaker label <code>Speaker N</code> (no name yet — manual tag happens later)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>6</td>
+<td>User can: bookmark a moment, pause capture, type quick notes alongside the transcript</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>7</td>
+<td>If translation mode is ON: translated subtitle appears under each finalized segment</td>
+<td>🟢 if local NLLB / 🔵 if Claude API</td>
+</tr>
+<tr>
+<td>8</td>
+<td>User stops recording</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Diarization runs (5–15s for a 1-hour meeting on M-series)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Meeting auto-exports to <code>vault/hark/meetings/YYYY-MM-DD-{title}.md</code> with frontmatter</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Git auto-commits the new meeting file to the vault repo</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>12</td>
+<td>UI prompts: &quot;Summarize?&quot;</td>
+<td>🟡</td>
+</tr>
+</tbody></table>
+<p><strong>Failure modes:</strong></p>
+<ul>
+<li>ScreenCapture permission revoked mid-session → engine emits warning, falls back to mic-only, UI shows yellow banner</li>
+<li>RTF spikes above 1.0 → engine logs warning, drops oldest unprocessed segment, UI shows &quot;Falling behind&quot; indicator</li>
+<li>Disk full → engine pauses, UI shows blocker error</li>
+<li>Engine crashes → UI shows &quot;Engine stopped&quot; with restart button; partial transcript preserved on disk</li>
+</ul>
+<hr>
+<h2 id="journey-3-asking-the-second-brain-a-question-mid-meeting">Journey 3: Asking the second-brain a question mid-meeting</h2>
+<p><strong>Actor:</strong> User actively in a meeting
+<strong>Trigger:</strong> Someone mentions a term/project/decision they don&#39;t remember
+<strong>Frequency:</strong> 1–5 times per meeting</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Trust boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>User presses ⌘⇧Q (or clicks Q&amp;A panel)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Q&amp;A side-panel opens next to the live transcript</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>3</td>
+<td>User types: &quot;What did we decide about the Camunda upgrade last month?&quot;</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Local embedding search retrieves top-K relevant vault notes + transcripts (BGE-small via CoreML)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Retrieved chunks + question sent to Claude with prompt caching on system prompt</td>
+<td>🔵 — transcript text + vault text, no audio</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Answer streams back into the panel with citations linking to source meeting/note files</td>
+<td>🔵 → 🟢</td>
+</tr>
+<tr>
+<td>7</td>
+<td>User clicks a citation → vault file opens in side-panel</td>
+<td>🟢</td>
+</tr>
+</tbody></table>
+<p><strong>Expectation set in UX:</strong> 1–3 second response time. This is for <em>recall</em>, not reflex. If user needs reflex-speed, they can use the term-capture panel (auto-shows inline definitions of detected vault terms with no network call needed for the lookup itself).</p>
+<p><strong>Failure modes:</strong></p>
+<ul>
+<li>No API key → &quot;Q&amp;A requires an Anthropic API key. Add one in Settings.&quot;</li>
+<li>Network down → graceful failure with &quot;Offline. Q&amp;A will resume when reconnected. Local search still works:&quot; + show top-K results as a fallback.</li>
+<li>No matches found in vault → &quot;Nothing in your vault matches. Try a different phrasing.&quot;</li>
+</ul>
+<hr>
+<h2 id="journey-4-post-meeting-review">Journey 4: Post-meeting review</h2>
+<p><strong>Actor:</strong> User after a meeting ended
+<strong>Trigger:</strong> Toast notification or opens main window
+<strong>Frequency:</strong> Once per meeting</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Trust boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>User clicks &quot;Summarize&quot; on the just-finished meeting</td>
+<td>🟡</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Transcript text + bookmarks sent to Claude with the summary system prompt</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Streamed response: TL;DR + action items {owner, due} + decisions + open questions + LLM-generated chapters</td>
+<td>🔵 → 🟢</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Summary appended to <code>vault/hark/meetings/YYYY-MM-DD-{title}.md</code> under headings</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Git auto-commits the updated file</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>6</td>
+<td>User reviews speaker labels — for any <code>Speaker N</code>, clicks → types name → saved</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Voice embedding for that speaker persisted to <code>vault/.speakers/{slug}.json</code></td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Next meeting with the same person: auto-labeled, no prompt</td>
+<td>🟢</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="journey-5-curating-the-vault-becomes-the-second-brain">Journey 5: Curating the vault (becomes the second brain)</h2>
+<p><strong>Actor:</strong> User during downtime
+<strong>Trigger:</strong> Wants to enrich a term that keeps coming up
+<strong>Frequency:</strong> Weekly</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Trust boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>User opens vault folder in Obsidian (or any markdown editor)</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Creates <code>notes/camunda.md</code> with their own knowledge about Camunda</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Saves the file</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Hark watches the vault folder via FSEvents → updates local embedding index</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Adds &quot;Camunda&quot; to the auto-injected Whisper vocab for future meetings</td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Next time &quot;Camunda&quot; is mentioned in a call, the term-capture panel shows the inline definition from <code>notes/camunda.md</code></td>
+<td>🟢</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Q&amp;A queries about Camunda now retrieve this note as context</td>
+<td>🟢 (or 🔵 if Q&amp;A invoked)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="whats-deliberately-missing-from-these-journeys">What&#39;s deliberately missing from these journeys</h2>
+<ul>
+<li><strong>No calendar pre-meeting brief</strong> — corporate Intune blocks Exchange access. Deferred until a viable path exists.</li>
+<li><strong>No &quot;join Zoom/Teams&quot; button</strong> — out of scope.</li>
+<li><strong>No multi-user sharing</strong> — personal product first.</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="05-user-stories.html">User stories</a> — these journeys decomposed into backlog items</li>
+<li><a href="../design/07-data-flows.html">Data flows</a> — the technical view of the same flows</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#legend">Legend</a>
+<a class="toc-l2" href="#journey-1-first-launch--onboarding">Journey 1: First launch &amp;amp; onboarding</a>
+<a class="toc-l2" href="#journey-2-joining-a-meeting-the-main-flow">Journey 2: Joining a meeting (the main flow)</a>
+<a class="toc-l2" href="#journey-3-asking-the-second-brain-a-question-mid-meeting">Journey 3: Asking the second-brain a question mid-meeting</a>
+<a class="toc-l2" href="#journey-4-post-meeting-review">Journey 4: Post-meeting review</a>
+<a class="toc-l2" href="#journey-5-curating-the-vault-becomes-the-second-brain">Journey 5: Curating the vault (becomes the second brain)</a>
+<a class="toc-l2" href="#whats-deliberately-missing-from-these-journeys">What&amp;#39;s deliberately missing from these journeys</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

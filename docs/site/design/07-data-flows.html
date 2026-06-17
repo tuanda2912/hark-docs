@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Flows &amp; Sequence Diagrams · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a class="active" href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Data Flows &amp; Sequence Diagrams</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="data-flows">Data Flows</h1>
+<p>The pipelines that move bytes through Hark. Each flow names: who produces, who consumes, latency budget, failure behavior.</p>
+<h2 id="1-live-audio-→-live-caption-the-hot-path">1. Live audio → live caption (the hot path)</h2>
+<p><strong>Latency budget:</strong> spoken word → visible text ≤ 1.5s p95
+<strong>Throughput target:</strong> sustain RTF &lt; 0.5</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant SCK <span class="hljs-built_in">as</span> ScreenCaptureKit
+    participant AVE <span class="hljs-built_in">as</span> AVAudioEngine (mic)
+    participant Mix <span class="hljs-built_in">as</span> Mixer + Resampler
+    participant <span class="hljs-keyword">Ring</span> <span class="hljs-built_in">as</span> <span class="hljs-keyword">Ring</span> Buffer (<span class="hljs-number">10</span>s)
+    participant VAD <span class="hljs-built_in">as</span> Silero VAD
+    participant WK <span class="hljs-built_in">as</span> WhisperKit
+    participant WS <span class="hljs-built_in">as</span> WebSocket
+    participant UI <span class="hljs-built_in">as</span> Angular UI
+
+    par parallel capture
+        SCK-&gt;&gt;Mix: PCM frames @ <span class="hljs-number">48</span>kHz stereo
+    and
+        AVE-&gt;&gt;Mix: PCM frames @ <span class="hljs-number">44.1</span>kHz mono
+    <span class="hljs-keyword">end</span>
+    Mix-&gt;&gt;<span class="hljs-keyword">Ring</span>: <span class="hljs-number">16</span>kHz mono s16le @ <span class="hljs-number">100</span>ms chunks
+    loop every <span class="hljs-number">100</span>ms
+        <span class="hljs-keyword">Ring</span>-&gt;&gt;VAD: latest chunk
+        VAD--&gt;&gt;<span class="hljs-keyword">Ring</span>: speech / silence flag
+    <span class="hljs-keyword">end</span>
+    Note over VAD: When speech detected,&lt;br/&gt;accumulate into utterance
+    VAD-&gt;&gt;WK: utterance (<span class="hljs-number">3</span><span class="hljs-number">-30</span>s) + <span class="hljs-number">30</span>s context window
+    WK-&gt;&gt;WS: partial segment {text, t_start, t_end, isFinal: false}
+    WS-&gt;&gt;UI: partial
+    UI-&gt;&gt;UI: render <span class="hljs-built_in">in</span> place (<span class="hljs-built_in">replace</span> last partial)
+    WK-&gt;&gt;WS: final segment {text, t_start, t_end, isFinal: true}
+    WS-&gt;&gt;UI: final
+    UI-&gt;&gt;UI: lock segment, scroll
+</code></pre>
+<p><strong>Backpressure rule:</strong> if <code>Ring.fill &gt; 8s</code> for &gt;2s straight, drop the oldest unprocessed chunk and emit <code>{type: &quot;warning&quot;, code: &quot;rtf_high&quot;}</code> over WS. UI shows yellow banner.</p>
+<p><strong>Failure modes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ScreenCapture permission revoked</td>
+<td>SCK callback error</td>
+<td>Stop SCK, continue mic-only, WS event <code>{type: &quot;warning&quot;, code: &quot;sck_lost&quot;}</code></td>
+</tr>
+<tr>
+<td>WhisperKit OOM</td>
+<td>Swift <code>MemoryWarning</code></td>
+<td>Save state, restart WhisperKit instance, replay last 5s</td>
+</tr>
+<tr>
+<td>Engine crashes</td>
+<td>UI WS disconnect</td>
+<td>Reconnect with backoff; if engine missing, prompt user to restart it</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="2-capture-end-→-diarization-→-vault-file">2. Capture end → diarization → vault file</h2>
+<p><strong>Latency budget:</strong> stop pressed → file in vault ≤ 5s for a 60-min meeting</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor User
+    participant UI
+    participant Engine <span class="hljs-built_in">as</span> Swift Engine
+    participant Diar <span class="hljs-built_in">as</span> FluidAudio
+    participant SpkMatch <span class="hljs-built_in">as</span> Speaker Matcher
+    participant Vault <span class="hljs-built_in">as</span> Vault FS
+    participant Git <span class="hljs-built_in">as</span> git wrapper
+
+    User-&gt;&gt;UI: Stop recording
+    UI-&gt;&gt;Engine: WS: stop
+    Engine-&gt;&gt;Engine: Flush <span class="hljs-built_in">ring</span> buffer, finalize segments
+    Engine-&gt;&gt;Diar: full session audio + segment timestamps
+    Diar--&gt;&gt;Engine: per-segment embeddings + cluster IDs
+    loop <span class="hljs-keyword">for</span> each cluster
+        Engine-&gt;&gt;SpkMatch: centroid embedding
+        SpkMatch-&gt;&gt;Vault: read .speakers/*.json
+        alt Match found (sim &gt; <span class="hljs-number">0.72</span>)
+            SpkMatch--&gt;&gt;Engine: known name
+        <span class="hljs-keyword">else</span> No <span class="hljs-keyword">match</span>
+            SpkMatch--&gt;&gt;Engine: <span class="hljs-string">&quot;Speaker N&quot;</span>
+        <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">end</span>
+    Engine-&gt;&gt;Vault: write meetings/YYYY-MM-DD-{slug}.md
+    Engine-&gt;&gt;Git: commit -m <span class="hljs-string">&quot;feat(meeting): add {slug}&quot;</span>
+    Engine-&gt;&gt;UI: WS: meeting saved {path, segments, speakers}
+    UI-&gt;&gt;User: Toast <span class="hljs-string">&quot;Meeting saved&quot;</span>
+</code></pre>
+<p><strong>The vault file shape:</strong></p>
+<pre><code class="language-markdown">---
+title: Q2 Planning Sync
+date: 2026-05-24T10:30:00+07:00
+duration<span class="hljs-emphasis">_sec: 2715
+attendees: [Alice Chen, Speaker 2, Speaker 3]
+bookmarks: 4
+hark_</span>version: 0.1.0
+---
+
+<span class="hljs-section">## Transcript</span>
+
+<span class="hljs-quote">&gt; <span class="hljs-strong">**Alice Chen**</span> · 10:30:02</span>
+<span class="hljs-quote">&gt; Welcome everyone. Let&#x27;s start with the Camunda migration status...</span>
+
+<span class="hljs-quote">&gt; <span class="hljs-strong">**Speaker 2**</span> · 10:30:18</span>
+<span class="hljs-quote">&gt; [[Camunda]] migration is at 80%. Two services left to cut over.</span>
+
+<span class="hljs-quote">&gt; 📌 <span class="hljs-strong">**Speaker 2**</span> · 10:31:42</span>
+<span class="hljs-quote">&gt; We decided to push the cutover to next Monday.</span>
+
+...
+</code></pre>
+<hr>
+<h2 id="3-post-meeting-summary-claude-api-path--the-only-outbound-channel">3. Post-meeting summary (Claude API path — the only outbound channel)</h2>
+<p><strong>Latency budget:</strong> stream first token ≤ 3s; full summary ≤ 30s for 60-min meeting</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor User
+    participant UI
+    participant Main <span class="hljs-keyword">as</span> Electron Main
+    participant Redact <span class="hljs-keyword">as</span> Redactor
+    participant Claude <span class="hljs-keyword">as</span> Claude API
+    participant Vault
+
+    U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;UI: Click <span class="hljs-string">&quot;Summarize&quot;</span>
+    UI-&gt;&gt;Main: IPC: summarize(meetingPath)
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Vault: read meeting markdown
+    V<span class="hljs-function"><span class="hljs-title">ault</span>--&gt;</span>&gt;Main: transcript <span class="hljs-keyword">text</span> + bookmarks
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Redact: scrub PII (<span class="hljs-keyword">if</span> enabled)
+    R<span class="hljs-function"><span class="hljs-title">edact</span>--&gt;</span>&gt;Main: redacted <span class="hljs-keyword">text</span> + redaction <span class="hljs-built_in">log</span>
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Claude: messages.create({model: claude-sonnet-<span class="hljs-number">4.7</span>,&lt;br/&gt;system: SUMMARY_PROMPT [cached],&lt;br/&gt;messages: [transcript], stream: <span class="hljs-literal">true</span>})
+    C<span class="hljs-function"><span class="hljs-title">laude</span>--&gt;</span>&gt;Main: SSE: {<span class="hljs-keyword">text</span>}
+    M<span class="hljs-function"><span class="hljs-title">ain</span>--&gt;</span>&gt;UI: IPC stream: chunks
+    UI-&gt;&gt;User: Render summary live
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Vault: append summary sections to meeting file
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Vault: git commit <span class="hljs-string">&quot;docs(meeting): summarize {slug}&quot;</span>
+</code></pre>
+<p><strong>What&#39;s sent:</strong></p>
+<ul>
+<li>✅ Transcript text (post-redaction if enabled)</li>
+<li>✅ Bookmark timestamps</li>
+<li>✅ The SUMMARY_PROMPT system message (cached)</li>
+<li>❌ Audio bytes — NEVER</li>
+<li>❌ Speaker voice embeddings — NEVER</li>
+<li>❌ Speaker real names if redact-before-send is ON (replaced with <code>Speaker A</code>, <code>Speaker B</code>)</li>
+</ul>
+<p><strong>Prompt caching strategy:</strong> the SUMMARY_PROMPT is ~2000 tokens of formatting instructions and example output. Cached, so cost is ~$0.0003 per summary regardless of transcript length (input transcript dominates cost).</p>
+<hr>
+<h2 id="4-in-meeting-qa-rag-over-vault">4. In-meeting Q&amp;A (RAG over vault)</h2>
+<p><strong>Latency budget:</strong> retrieval ≤ 200ms local; first token from Claude ≤ 3s</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor User
+    participant UI
+    participant Main <span class="hljs-keyword">as</span> Electron Main
+    participant Embed <span class="hljs-keyword">as</span> Local Embedder&lt;br/&gt;BGE-small CoreML
+    participant Vec <span class="hljs-keyword">as</span> SQLite-vec index
+    participant Vault
+    participant Redact <span class="hljs-keyword">as</span> Redactor
+    participant Claude
+
+    U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;UI: ⌘⇧Q + type question
+    UI-&gt;&gt;Main: IPC: ask(question)
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Embed: embed(question)
+    E<span class="hljs-function"><span class="hljs-title">mbed</span>--&gt;</span>&gt;Main: <span class="hljs-number">384</span>-dim vector
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Vec: top-K similarity search (K=<span class="hljs-number">8</span>)
+    V<span class="hljs-function"><span class="hljs-title">ec</span>--&gt;</span>&gt;Main: chunk IDs + scores
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Vault: read source files <span class="hljs-keyword">for</span> chunks
+    V<span class="hljs-function"><span class="hljs-title">ault</span>--&gt;</span>&gt;Main: chunk texts + provenance
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Redact: scrub PII (<span class="hljs-keyword">if</span> enabled)
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Claude: messages.create({system: QA_PROMPT [cached],&lt;br/&gt;messages: [{context: chunks, question}], stream: <span class="hljs-literal">true</span>})
+    C<span class="hljs-function"><span class="hljs-title">laude</span>--&gt;</span>&gt;Main: SSE: {<span class="hljs-keyword">text</span>}
+    M<span class="hljs-function"><span class="hljs-title">ain</span>--&gt;</span>&gt;UI: stream chunks + citations
+    UI-&gt;&gt;User: Render answer <span class="hljs-keyword">with</span> [<span class="hljs-number">1</span>] [<span class="hljs-number">2</span>] citations linking to vault files
+</code></pre>
+<p><strong>Embedding index lifecycle:</strong></p>
+<ul>
+<li>Built on first run by walking the vault folder</li>
+<li>Updated incrementally via FSEvents on vault changes (debounced 30s)</li>
+<li>Rebuildable from scratch in &lt; 60s for a 1000-note vault (BGE-small is fast on ANE)</li>
+</ul>
+<hr>
+<h2 id="5-translation-two-modes">5. Translation (two modes)</h2>
+<h3 id="5a-fast-mode-local-nllb-200">5a. Fast mode (local NLLB-200)</h3>
+<p><strong>Latency budget:</strong> segment finalized → translated line shown ≤ 500ms</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant WK <span class="hljs-keyword">as</span> WhisperKit
+    participant Trans <span class="hljs-keyword">as</span> NLLB-<span class="hljs-number">200</span> CoreML
+    participant WS <span class="hljs-keyword">as</span> WebSocket
+    participant UI
+
+    WK<span class="hljs-punctuation">-&gt;</span>&gt;WS: <span class="hljs-keyword">final</span> segment {text, lang_detected}
+    WS<span class="hljs-punctuation">-&gt;</span>&gt;Trans: <span class="hljs-title function_ invoke__">translate</span>(text, source_lang, target_lang)
+    Trans-<span class="hljs-punctuation">-&gt;</span>&gt;WS: translated_text
+    WS<span class="hljs-punctuation">-&gt;</span>&gt;UI: {original, translation}
+</code></pre>
+<h3 id="5b-high-quality-mode-claude-api">5b. High-quality mode (Claude API)</h3>
+<p><strong>Latency budget:</strong> segment finalized → translated line shown ≤ 3s</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant WK <span class="hljs-keyword">as</span> WhisperKit
+    participant WS <span class="hljs-keyword">as</span> WebSocket
+    participant UI
+    participant Main <span class="hljs-keyword">as</span> Electron Main
+    participant Claude
+
+    WK-&gt;&gt;WS: final segment
+    WS-&gt;&gt;UI: original <span class="hljs-keyword">text</span>
+    UI-&gt;&gt;Main: IPC: translate(<span class="hljs-keyword">text</span>)
+    M<span class="hljs-function"><span class="hljs-title">ain</span>-&gt;</span>&gt;Claude: messages.create({system: TRANSLATE_PROMPT [cached], messages: [<span class="hljs-keyword">text</span>]})
+    C<span class="hljs-function"><span class="hljs-title">laude</span>--&gt;</span>&gt;Main: translation
+    M<span class="hljs-function"><span class="hljs-title">ain</span>--&gt;</span>&gt;UI: translation
+</code></pre>
+<p>User toggles mode in Settings. Subsequent segments use the new mode immediately.</p>
+<hr>
+<h2 id="6-vault-watcher-→-term-index-→-whisper-vocab">6. Vault watcher → term index → Whisper vocab</h2>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor User
+    participant FS <span class="hljs-keyword">as</span> Vault folder
+    participant Watch <span class="hljs-keyword">as</span> FSEvents Watcher
+    participant TermIdx <span class="hljs-keyword">as</span> Term Index (FTS5)
+    participant EmbIdx <span class="hljs-keyword">as</span> Embedding Index
+    participant Engine <span class="hljs-keyword">as</span> Swift Engine
+
+    U<span class="hljs-function"><span class="hljs-title">ser</span>-&gt;</span>&gt;FS: edit notes/camunda.md
+    FS-&gt;&gt;Watch: file change event
+    W<span class="hljs-function"><span class="hljs-title">atch</span>-&gt;</span>&gt;Watch: debounce <span class="hljs-number">30</span>s
+    W<span class="hljs-function"><span class="hljs-title">atch</span>-&gt;</span>&gt;TermIdx: re-index changed files (titles + frontmatter tags)
+    W<span class="hljs-function"><span class="hljs-title">atch</span>-&gt;</span>&gt;EmbIdx: re-chunk + re-embed changed files
+    Note over Engine: At next <span class="hljs-string">&quot;start recording&quot;</span>:
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;TermIdx: top-N most-relevant terms
+    T<span class="hljs-function"><span class="hljs-title">ermIdx</span>--&gt;</span>&gt;Engine: term list
+    E<span class="hljs-function"><span class="hljs-title">ngine</span>-&gt;</span>&gt;Engine: build WhisperKit initial-prompt
+</code></pre>
+<hr>
+<h2 id="cross-cutting-concerns">Cross-cutting concerns</h2>
+<h3 id="cost-accounting-claude-api">Cost accounting (Claude API)</h3>
+<p>Tracked per session, logged locally. Settings → Privacy shows last-7-day spend so user has no surprises.</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Avg tokens in</th>
+<th>Avg tokens out</th>
+<th>Cost @ Sonnet 4.7</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Summary (60-min meeting)</td>
+<td>~8,000 (cached after first)</td>
+<td>~800</td>
+<td>~$0.02</td>
+</tr>
+<tr>
+<td>Q&amp;A query</td>
+<td>~3,500 (mostly cached)</td>
+<td>~300</td>
+<td>~$0.005</td>
+</tr>
+<tr>
+<td>Translation chunk (high-quality)</td>
+<td>~100</td>
+<td>~100</td>
+<td>~$0.0005</td>
+</tr>
+</tbody></table>
+<p>At 4 hours of meetings/day with 1 summary each + 5 Q&amp;A + <del>20 translation chunks: **</del>$0.15/day**.</p>
+<h3 id="local-logging">Local logging</h3>
+<ul>
+<li>Path: <code>~/Library/Logs/Hark/</code></li>
+<li>Files: <code>engine.log</code>, <code>ui.log</code>, <code>claude-cost.log</code>, <code>redaction.log</code></li>
+<li>Format: JSON-lines, 7-day rotation</li>
+<li>Never contains: transcript text, audio, vault contents, API keys</li>
+<li>Always contains: timestamps, event types, error stacks, performance counters (RTF, latency, RAM)</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="06-architecture-overview.html">Architecture overview</a></li>
+<li><a href="08-websocket-api-contract.html">WebSocket API contract</a> — message schemas referenced above</li>
+<li><a href="../qa/09-test-strategy.html#privacy-checklist">Privacy test checklist</a></li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#1-live-audio-→-live-caption-the-hot-path">1. Live audio → live caption (the hot path)</a>
+<a class="toc-l2" href="#2-capture-end-→-diarization-→-vault-file">2. Capture end → diarization → vault file</a>
+<a class="toc-l2" href="#3-post-meeting-summary-claude-api-path--the-only-outbound-channel">3. Post-meeting summary (Claude API path — the only outbound channel)</a>
+<a class="toc-l2" href="#4-in-meeting-qa-rag-over-vault">4. In-meeting Q&amp;amp;A (RAG over vault)</a>
+<a class="toc-l2" href="#5-translation-two-modes">5. Translation (two modes)</a>
+<a class="toc-l3" href="#5a-fast-mode-local-nllb-200">5a. Fast mode (local NLLB-200)</a>
+<a class="toc-l3" href="#5b-high-quality-mode-claude-api">5b. High-quality mode (Claude API)</a>
+<a class="toc-l2" href="#6-vault-watcher-→-term-index-→-whisper-vocab">6. Vault watcher → term index → Whisper vocab</a>
+<a class="toc-l2" href="#cross-cutting-concerns">Cross-cutting concerns</a>
+<a class="toc-l3" href="#cost-accounting-claude-api">Cost accounting (Claude API)</a>
+<a class="toc-l3" href="#local-logging">Local logging</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

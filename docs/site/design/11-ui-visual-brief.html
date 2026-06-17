@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX Visual Design Brief · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a class="active" href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">UI/UX Visual Design Brief</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">ready-to-paste</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="hark--uiux-design-brief">Hark — UI/UX Design Brief</h1>
+<blockquote>
+<p><strong>HOW TO USE THIS DOC:</strong> Copy everything below the next horizontal rule into the design tool of your choice. It is self-contained — no prior context needed.</p>
+</blockquote>
+<hr>
+<h1 id="hark--design-brief">Hark — Design Brief</h1>
+<h2 id="1-what-im-building">1. What I&#39;m building</h2>
+<p><strong>Hark is a local-first meeting transcription app for macOS.</strong> Live captions, speaker labels, translation, post-meeting summaries, and a personal knowledge vault — all running on the user&#39;s Mac, <strong>no cloud transcription</strong>. Audio never leaves the machine.</p>
+<p><strong>One-line pitch:</strong> <em>&quot;A meeting tool you can actually trust with your work calls — because every byte of audio stays on your Mac.&quot;</em></p>
+<p>Think: <strong>Obsidian&#39;s discipline meets Granola&#39;s polish, built for people who can&#39;t use Granola because of compliance.</strong></p>
+<h2 id="2-audience">2. Audience</h2>
+<p><strong>Primary user:</strong> Senior knowledge workers (engineers, consultants, analysts) at regulated companies — banking, insurance, healthcare, legal. They&#39;re in 4–6 hours of meetings daily, bilingual (often English + an Asian or European language), code-switching mid-sentence. They use Obsidian or similar for notes. They distrust SaaS. They&#39;re on macOS daily, Apple Silicon, comfortable with hotkeys.</p>
+<p><strong>Tone they expect:</strong> Calm, focused, technically credible. Not playful, not gamified, not &quot;AI-magical.&quot; This is a tool for serious work.</p>
+<p><strong>Anti-user:</strong> People who want Granola&#39;s &quot;click join → magic happens&quot; experience. They will hate this app&#39;s permission prompts and manual speaker tagging. That&#39;s fine.</p>
+<h2 id="3-visual-direction">3. Visual direction</h2>
+<h3 id="mood">Mood</h3>
+<ul>
+<li><strong>Calm, focused, trustworthy.</strong> The product&#39;s value is trust — the visual should feel like a Swiss bank lobby, not a startup demo.</li>
+<li><strong>Quietly Mac-native.</strong> Uses macOS materials, vibrancy, traffic-light buttons, SF system font. Feels like a first-party Apple tool, not a cross-platform port.</li>
+<li><strong>Information-dense but breathable.</strong> Meeting transcripts have a lot of text. We respect the reader&#39;s eye — generous line-height, restrained color, no cards-within-cards.</li>
+</ul>
+<h3 id="color-palette">Color palette</h3>
+<p><strong>Default to dark mode.</strong> Meetings happen all day; dark reduces eye strain. Light mode supported.</p>
+<p><strong>Dark mode (primary):</strong></p>
+<ul>
+<li>Background: deep cool gray, not pure black — <code>#0e1116</code> to <code>#161a21</code> range</li>
+<li>Surface (panels): slightly elevated — <code>#1a1f27</code></li>
+<li>Border: subtle — <code>#262c36</code>, never harsh white</li>
+<li>Primary text: warm off-white <code>#e8eaed</code></li>
+<li>Secondary text: <code>#9aa3b2</code></li>
+<li>Muted text: <code>#5c6573</code></li>
+<li>Accent (single color — restraint!): a muted teal-blue like <code>#5eb3c8</code> or <code>#7aa9d6</code>. Used for: links, focus rings, active state, the recording indicator. <strong>Never use accent for chrome decoration.</strong></li>
+<li>Speaker colors (for transcript): a soft palette of 6 colors — warm pinks, sage greens, dusty oranges, lavenders, sandy yellows, soft slates. Muted, never saturated.</li>
+<li>Status:<ul>
+<li>Recording (red): <code>#e35d6a</code> — warm, not panic-button red</li>
+<li>Warning (amber): <code>#d4a657</code></li>
+<li>Success (green): <code>#7ec089</code></li>
+<li>Privacy / cloud-touched (faint blue glow): subtle, only on Claude-API actions</li>
+</ul>
+</li>
+</ul>
+<p><strong>Light mode:</strong></p>
+<ul>
+<li>Background: warm off-white <code>#fafaf7</code> (not pure white)</li>
+<li>Same hierarchy, inverted contrast</li>
+<li>Same accent, slightly desaturated</li>
+</ul>
+<h3 id="typography">Typography</h3>
+<ul>
+<li><strong>System UI:</strong> SF Pro (macOS default) — feels native</li>
+<li><strong>Body text in transcripts:</strong> Inter or SF Pro at 14–15px, line-height 1.55</li>
+<li><strong>Monospace (timestamps, code blocks, vault paths):</strong> Berkeley Mono if budget; JetBrains Mono or SF Mono otherwise</li>
+<li><strong>Headings:</strong> SF Pro Display, weights restrained — 600 max for h1, 500 for h2</li>
+</ul>
+<h3 id="density">Density</h3>
+<ul>
+<li><strong>Medium-dense.</strong> Closer to Obsidian or Linear than to Granola/Notion (which feel spacious to the point of empty).</li>
+<li>Tray menu: compact, every item &lt; 32px tall</li>
+<li>Main window: comfortable padding (16–24px), but transcript lines are tight (1.55 line-height, not 2.0)</li>
+<li>No huge hero areas. No oversized buttons.</li>
+</ul>
+<h3 id="motion">Motion</h3>
+<ul>
+<li><strong>Sparingly.</strong> A meeting tool that animates everything is exhausting.</li>
+<li>New transcript line: fade-in 150ms, no slide</li>
+<li>Panel open/close: 200ms ease-out</li>
+<li>Modal: 180ms scale + fade</li>
+<li><strong>No bouncy springs.</strong> Curves: standard ease-out, not material-design overshoot.</li>
+<li>Recording indicator pulse: slow, 2-second cycle, low opacity range</li>
+</ul>
+<h3 id="shape--spacing">Shape &amp; spacing</h3>
+<ul>
+<li><strong>Border radius:</strong> 6–8px on panels, 4px on inputs, 10px on cards. <strong>No 20px+ pillow radii.</strong></li>
+<li><strong>Spacing scale:</strong> 4 / 8 / 12 / 16 / 24 / 32 / 48px. No half-pixels, no arbitrary 13s.</li>
+<li><strong>Borders before shadows.</strong> Dark mode: 1px subtle border. Avoid drop shadows unless elevation truly matters (modal, popover).</li>
+</ul>
+<h2 id="4-what-not-to-do">4. What NOT to do</h2>
+<p>Treat this as a hard constraint list. Violating any of these breaks the product&#39;s positioning.</p>
+<ul>
+<li>❌ <strong>No &quot;AI shimmer&quot; effects.</strong> No animated gradients on text, no rainbow gradients on the recording button, no purple-to-blue magic-wand iconography. We&#39;re not selling AI; we&#39;re selling trust.</li>
+<li>❌ <strong>No huge rounded pill buttons</strong> with bright primary colors. We&#39;re not Stripe.</li>
+<li>❌ <strong>No marketing-flavored emoji icons</strong> scattered through the UI. Mac-native SF Symbols only.</li>
+<li>❌ <strong>No &quot;card explosion&quot;</strong> — don&#39;t wrap every component in a rounded card with shadow. Use borders sparingly.</li>
+<li>❌ <strong>No tutorial overlays / coach marks</strong> in the main UI. Onboarding is a separate 3-screen flow, then never again.</li>
+<li>❌ <strong>No notification badges that say things like &quot;✨ NEW&quot;.</strong> We don&#39;t celebrate features.</li>
+<li>❌ <strong>No dark patterns</strong> — no &quot;Are you sure you want to disable cloud features?&quot; guilt-tripping. The user is the boss.</li>
+<li>❌ <strong>No mobile-app patterns</strong> (bottom tabs, hamburger menus). This is a desktop app for adults.</li>
+</ul>
+<h2 id="5-component-inventory-atomic-level">5. Component inventory (atomic level)</h2>
+<h3 id="atoms">Atoms</h3>
+<ul>
+<li>Button — primary (accent), secondary (border-only), ghost (text-only), destructive (red)</li>
+<li>Icon button (32x32, SF Symbol)</li>
+<li>Input — text, password (for API key), select dropdown</li>
+<li>Toggle switch (Mac-native style)</li>
+<li>Slider</li>
+<li>Badge — speaker color chip, status pill</li>
+<li>Tooltip (delayed, subtle)</li>
+<li>Avatar — circular, speaker initial fallback</li>
+</ul>
+<h3 id="molecules">Molecules</h3>
+<ul>
+<li><strong>Transcript line</strong> — speaker name + timestamp + text + (optional) translated line + (optional) inline citation marker. Speaker name colored per palette above.</li>
+<li><strong>Bookmark marker</strong> — inline pin icon with timestamp, hover shows context</li>
+<li><strong>Term card</strong> — small floating card with vault term excerpt + link to source note</li>
+<li><strong>Citation chip</strong> — small numbered superscript that links to source file</li>
+<li><strong>Speaker tag pill</strong> — <code>[Speaker 2 ▾]</code> dropdown that opens rename input</li>
+<li><strong>Status banner</strong> — top-of-window strip for warnings (yellow) / errors (red) / info (blue)</li>
+<li><strong>Empty state</strong> — single SF Symbol icon + 1 line + 1 button. Never illustrated cartoons.</li>
+</ul>
+<h3 id="organisms">Organisms</h3>
+<ul>
+<li><strong>Tray menu</strong> (compact, ~280px wide)</li>
+<li><strong>Live transcript pane</strong> (the centerpiece of the main window)</li>
+<li><strong>Q&amp;A side panel</strong> (collapsible, right side of main window)</li>
+<li><strong>Speaker sidebar</strong> (collapsible, left, shows attendees with tagging)</li>
+<li><strong>Settings page</strong> with sub-nav (Privacy, Audio, Translation, API, Hotkeys, Vault, About)</li>
+<li><strong>Post-meeting review screen</strong> (summary + action items + speaker confirmation)</li>
+</ul>
+<h2 id="6-screens-to-design">6. Screens to design</h2>
+<p>Design each as both a <strong>dark</strong> and <strong>light</strong> mock. Include realistic content (actual transcript text, real-sounding action items) — no <code>Lorem ipsum</code>.</p>
+<h3 id="screen-1-tray-menu">Screen 1: Tray menu</h3>
+<ul>
+<li>~280px wide, opens from menu-bar icon</li>
+<li>Top: recording state (idle / recording with elapsed time / paused)</li>
+<li>Big single button: &quot;Start recording&quot; or &quot;Stop&quot; (color reflects state)</li>
+<li>Below: &quot;Pause&quot;, &quot;Bookmark moment&quot; buttons</li>
+<li>Below: &quot;Open main window&quot;, &quot;Recent meetings&quot; (last 3)</li>
+<li>Footer: Settings, Quit</li>
+<li>Recording state: pulse on tray icon (red dot)</li>
+</ul>
+<h3 id="screen-2-main-window--live-transcript-primary-screen">Screen 2: Main window — live transcript (PRIMARY SCREEN)</h3>
+<p>This is the centerpiece. Get this right and everything else follows.</p>
+<ul>
+<li>Window: ~1100px x 700px default, resizable</li>
+<li><strong>Three columns:</strong><ul>
+<li>Left (collapsible, 240px): attendees list with speaker color chips + manual tag UI</li>
+<li>Center (flexible): live transcript, latest line at bottom, auto-scroll with manual override</li>
+<li>Right (collapsible, 320px): Q&amp;A panel OR term cards OR off</li>
+</ul>
+</li>
+<li><strong>Top bar:</strong> recording indicator (red pulse + elapsed time), pause button, bookmark button (with hotkey hint ⌘⇧B), settings cog</li>
+<li><strong>Transcript line shape:</strong><ul>
+<li>Speaker name in colored small caps</li>
+<li>Timestamp in monospace, muted</li>
+<li>Text in body font, comfortable line-height</li>
+<li>Below (if translation on): translated text in slightly muted italic, smaller</li>
+<li>Inline pin icon if bookmarked</li>
+<li><code>[[wikilink]]</code> style for auto-linked vault terms</li>
+</ul>
+</li>
+<li><strong>Status banner area</strong> above transcript (only visible if a warning is active)</li>
+</ul>
+<h3 id="screen-3-qa-panel-right-column-expanded">Screen 3: Q&amp;A panel (right column expanded)</h3>
+<ul>
+<li>Top: search/ask input with hotkey hint (⌘⇧Q)</li>
+<li>Below input: streaming answer with citation chips <code>[1] [2]</code></li>
+<li>Below answer: cited source previews (collapsible)</li>
+<li>Empty state: &quot;Ask anything about your past meetings or notes.&quot;</li>
+</ul>
+<h3 id="screen-4-post-meeting-review">Screen 4: Post-meeting review</h3>
+<p>Appears after stopping a recording.</p>
+<ul>
+<li>Header: meeting title (editable), date, duration</li>
+<li><strong>Tabs:</strong> Summary | Action Items | Decisions | Open Questions | Full Transcript | Speakers</li>
+<li>Summary tab: TL;DR + LLM-generated chapters (each chapter expandable to show its segment)</li>
+<li>Action Items tab: checklist of <code>[ ] {action} — {owner} — by {date}</code>, each editable</li>
+<li>Speakers tab: list of detected speakers, for unlabeled ones an inline &quot;Who is this?&quot; input + audio sample play button</li>
+</ul>
+<h3 id="screen-5-settings-multi-page">Screen 5: Settings (multi-page)</h3>
+<p>Left sub-nav (Privacy, Audio, Translation, API &amp; Cost, Hotkeys, Vault, About). Right pane shows the active section.</p>
+<ul>
+<li><strong>Privacy page (most important):</strong><ul>
+<li>Big honest paragraph: &quot;Hark never sends your audio anywhere. The only cloud-touching feature is Claude API calls for summary, translation (high-quality mode), and Q&amp;A — and only when you invoke them.&quot;</li>
+<li>Toggle: &quot;Redact PII before sending to Claude&quot; (ON by default)</li>
+<li>Toggle: &quot;Show me what was redacted&quot; (opens log)</li>
+<li>Section: &quot;Recent cloud-touching activity&quot; — last 10 Claude API calls with timestamp, action type, redacted-or-not indicator. NO transcript content shown.</li>
+<li>7-day API spend running total</li>
+</ul>
+</li>
+<li><strong>Audio page:</strong> mic selection, system audio test, VAD sensitivity slider</li>
+<li><strong>Translation page:</strong> mode toggle (Fast local / High-quality cloud), target language picker</li>
+<li><strong>API &amp; Cost page:</strong> API key input (masked), daily/monthly spend graph</li>
+<li><strong>Hotkeys page:</strong> rebindable shortcuts</li>
+<li><strong>Vault page:</strong> folder path picker, git status indicator, &quot;Open in Finder&quot;, &quot;Open in Obsidian&quot; buttons</li>
+</ul>
+<h3 id="screen-6-onboarding-3-screens-dismissible-after">Screen 6: Onboarding (3 screens, dismissible after)</h3>
+<ol>
+<li><strong>Trust promise:</strong> big text — &quot;Your audio never leaves this Mac.&quot; Three bullets. One button: &quot;Got it.&quot;</li>
+<li><strong>Permissions:</strong> ScreenCapture + Microphone, each with a one-line &quot;why we need this&quot;, a button per permission</li>
+<li><strong>Setup:</strong> Vault folder picker (default suggested) + API key paste field (skippable, &quot;I&#39;ll add this later&quot;). One button: &quot;Start.&quot;</li>
+</ol>
+<h3 id="screen-7-empty-states">Screen 7: Empty states</h3>
+<ul>
+<li><strong>No meetings yet:</strong> SF Symbol of a waveform, &quot;No meetings yet. Press ⌘⇧R or click the tray icon to start your first one.&quot;</li>
+<li><strong>No API key:</strong> subtle banner in Q&amp;A panel, &quot;Add an Anthropic API key in Settings to enable Q&amp;A.&quot;</li>
+</ul>
+<h3 id="screen-8-error-states">Screen 8: Error states</h3>
+<ul>
+<li><strong>ScreenCapture permission denied:</strong> modal, plain text explanation, &quot;Open System Settings&quot; button</li>
+<li><strong>Disk full:</strong> banner across top, recording paused, &quot;Free up space and resume&quot;</li>
+<li><strong>Offline (Q&amp;A attempted):</strong> in Q&amp;A panel, &quot;Q&amp;A is offline. Local search still works:&quot; + show top-K local matches</li>
+</ul>
+<h2 id="7-docs-site--portfolio-design-secondary-deliverable">7. Docs site / portfolio design (secondary deliverable)</h2>
+<p>For showing this project to a company audience as a portfolio piece. A static docs site that renders the markdown files in <code>vault/hark/docs/</code>.</p>
+<h3 id="vibe">Vibe</h3>
+<p>Same color palette and typography as the app. Reads like Linear&#39;s or Stripe&#39;s docs — calm, technical, confident. Not like Vercel&#39;s marketing splash.</p>
+<h3 id="pages-to-design">Pages to design</h3>
+<ol>
+<li><strong>Landing page</strong> — one screen. Big title &quot;Hark&quot;, one-line pitch, three columns: Product / Architecture / QA, each linking into the docs. Footer: GitHub, license.</li>
+<li><strong>Doc page template</strong> — left sidebar nav (collapsible nesting), main content (max ~720px reading width), right &quot;On this page&quot; outline. Code blocks syntax-highlighted, mermaid diagrams rendered inline, callouts (info / warning / note) styled subtly.</li>
+<li><strong>ADR card</strong> — special template for decision records: header strip with status pill (Accepted/Superseded), context/decision/alternatives sections styled distinctly.</li>
+</ol>
+<h2 id="8-reference-what-we-admire-and-what-we-dont">8. Reference: what we admire and what we don&#39;t</h2>
+<p><strong>Steal from:</strong></p>
+<ul>
+<li><strong>Linear</strong> — calm, dense, restrained color, brilliant typography</li>
+<li><strong>Obsidian</strong> — markdown-first, takes power users seriously, dark mode done right</li>
+<li><strong>Things 3</strong> — Mac-native feel, tasteful</li>
+<li><strong>Bear</strong> — typography in a writing tool</li>
+<li><strong>Stripe Docs</strong> — what we want our docs site to feel like</li>
+</ul>
+<p><strong>Don&#39;t be:</strong></p>
+<ul>
+<li><strong>Notion</strong> — too playful for our audience</li>
+<li><strong>Granola</strong> — too sparse, too &quot;consumer SaaS&quot;</li>
+<li><strong>Otter.ai</strong> — too busy, too many badges and CTAs</li>
+<li><strong>Slack</strong> — too colorful, too much chrome</li>
+</ul>
+<h2 id="9-deliverables-i-want-from-this-design-pass">9. Deliverables I want from this design pass</h2>
+<p>In rough priority order:</p>
+<ol>
+<li><strong>Main window — live transcript</strong> (dark + light) — the screen we live in. Get this right first.</li>
+<li><strong>Tray menu</strong> (dark + light)</li>
+<li><strong>Post-meeting review</strong> screen (dark)</li>
+<li><strong>Q&amp;A panel</strong> detail (dark)</li>
+<li><strong>Settings → Privacy</strong> page (dark) — this is where trust lives</li>
+<li><strong>Onboarding</strong> 3 screens (dark)</li>
+<li><strong>Docs site landing + per-doc template</strong></li>
+<li><strong>Component sheet</strong> — buttons, inputs, transcript line variants, speaker tags</li>
+</ol>
+<p>For each: ideally a single-frame mock at realistic resolution (Retina). Including realistic content matters more than including every state.</p>
+<h2 id="10-constraints-worth-repeating">10. Constraints worth repeating</h2>
+<ul>
+<li>macOS app, <strong>dark mode default</strong>, light mode supported</li>
+<li>Resizable window, but design at 1100×700 as the canonical size</li>
+<li>All text examples should sound like a real bilingual technical meeting (English + Thai code-switching is fine)</li>
+<li>No fake names that sound like a marketing video (&quot;Sarah from Acme Corp&quot;). Use plausible names: Alice Chen, Khun Somchai, Ahmed K.</li>
+<li>No fake company logos or third-party brand chrome</li>
+</ul>
+<hr>
+<p><em>End of brief.</em></p>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#1-what-im-building">1. What I&amp;#39;m building</a>
+<a class="toc-l2" href="#2-audience">2. Audience</a>
+<a class="toc-l2" href="#3-visual-direction">3. Visual direction</a>
+<a class="toc-l3" href="#mood">Mood</a>
+<a class="toc-l3" href="#color-palette">Color palette</a>
+<a class="toc-l3" href="#typography">Typography</a>
+<a class="toc-l3" href="#density">Density</a>
+<a class="toc-l3" href="#motion">Motion</a>
+<a class="toc-l3" href="#shape--spacing">Shape &amp;amp; spacing</a>
+<a class="toc-l2" href="#4-what-not-to-do">4. What NOT to do</a>
+<a class="toc-l2" href="#5-component-inventory-atomic-level">5. Component inventory (atomic level)</a>
+<a class="toc-l3" href="#atoms">Atoms</a>
+<a class="toc-l3" href="#molecules">Molecules</a>
+<a class="toc-l3" href="#organisms">Organisms</a>
+<a class="toc-l2" href="#6-screens-to-design">6. Screens to design</a>
+<a class="toc-l3" href="#screen-1-tray-menu">Screen 1: Tray menu</a>
+<a class="toc-l3" href="#screen-2-main-window--live-transcript-primary-screen">Screen 2: Main window — live transcript (PRIMARY SCREEN)</a>
+<a class="toc-l3" href="#screen-3-qa-panel-right-column-expanded">Screen 3: Q&amp;amp;A panel (right column expanded)</a>
+<a class="toc-l3" href="#screen-4-post-meeting-review">Screen 4: Post-meeting review</a>
+<a class="toc-l3" href="#screen-5-settings-multi-page">Screen 5: Settings (multi-page)</a>
+<a class="toc-l3" href="#screen-6-onboarding-3-screens-dismissible-after">Screen 6: Onboarding (3 screens, dismissible after)</a>
+<a class="toc-l3" href="#screen-7-empty-states">Screen 7: Empty states</a>
+<a class="toc-l3" href="#screen-8-error-states">Screen 8: Error states</a>
+<a class="toc-l2" href="#7-docs-site--portfolio-design-secondary-deliverable">7. Docs site / portfolio design (secondary deliverable)</a>
+<a class="toc-l3" href="#vibe">Vibe</a>
+<a class="toc-l3" href="#pages-to-design">Pages to design</a>
+<a class="toc-l2" href="#8-reference-what-we-admire-and-what-we-dont">8. Reference: what we admire and what we don&amp;#39;t</a>
+<a class="toc-l2" href="#9-deliverables-i-want-from-this-design-pass">9. Deliverables I want from this design pass</a>
+<a class="toc-l2" href="#10-constraints-worth-repeating">10. Constraints worth repeating</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

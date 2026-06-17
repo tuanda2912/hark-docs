@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Performance Benchmarks · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a class="active" href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Performance Benchmarks</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="performance-benchmarks">Performance Benchmarks</h1>
+<p>The numbers that decide whether Hark is good enough to use. Phase 0 of the project is essentially &quot;build this harness and measure&quot; — if the numbers don&#39;t hit Tier 1 targets, we don&#39;t proceed.</p>
+<h2 id="what-performance-means-here">What &quot;performance&quot; means here</h2>
+<p>Three orthogonal things, each measured independently:</p>
+<ol>
+<li><strong>Speed</strong> — how fast can the engine convert audio to text? (RTF)</li>
+<li><strong>Latency</strong> — how long from spoken word to visible text? (end-to-end)</li>
+<li><strong>Resource use</strong> — how much RAM / CPU / power does it consume?</li>
+</ol>
+<p>You can pass one and fail another. We measure all three.</p>
+<h2 id="hardware-baseline">Hardware baseline</h2>
+<p>Benchmarks run on the developer&#39;s actual hardware. Stack rationale assumes Apple Silicon.</p>
+<ul>
+<li><strong>Primary:</strong> Apple Silicon M-series Mac (M3 or later assumed for 2026 user base), 16 GB RAM minimum</li>
+<li><strong>Stretch:</strong> test on M1 base (8 GB) to know the floor</li>
+<li><strong>Out of scope:</strong> Intel Macs — refuse to install with a clear error</li>
+</ul>
+<p>Every benchmark records: model name, OS version, chip, RAM, thermal state at start.</p>
+<h2 id="benchmark-1-real-time-factor-rtf">Benchmark 1: Real-Time Factor (RTF)</h2>
+<p><strong>Definition:</strong> wall-clock seconds taken to transcribe / audio seconds processed.
+<strong>Pass:</strong> RTF &lt; 0.5 for large-v3-turbo on M-series.
+<strong>Stretch:</strong> RTF &lt; 0.3.</p>
+<h3 id="harness">Harness</h3>
+<pre><code>bench<span class="hljs-operator">/</span>rtf.swift
+  ├── loads WhisperKit <span class="hljs-keyword">large</span><span class="hljs-operator">-</span>v3<span class="hljs-operator">-</span>turbo
+  ├── <span class="hljs-keyword">reads</span> fixtures<span class="hljs-operator">/</span>long<span class="hljs-operator">-</span>en.wav (<span class="hljs-number">10</span> min, mixed speech)
+  ├── feeds <span class="hljs-keyword">in</span> <span class="hljs-number">30</span>s windows <span class="hljs-keyword">with</span> <span class="hljs-number">5</span>s hop (production setting)
+  ├── records wall<span class="hljs-operator">-</span>clock <span class="hljs-keyword">per</span> <span class="hljs-keyword">window</span>
+  └── outputs: rtf_avg, rtf_p50, rtf_p95, rtf_p99
+</code></pre>
+<h3 id="cases-to-measure">Cases to measure</h3>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Fixture</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>English clean</td>
+<td><code>long-en.wav</code></td>
+<td>Baseline, ideal conditions</td>
+</tr>
+<tr>
+<td>English with noise</td>
+<td><code>long-en-noisy.wav</code></td>
+<td>Realistic conference room</td>
+</tr>
+<tr>
+<td>Thai-English code-switch</td>
+<td><code>long-th-en.wav</code></td>
+<td>The actual use case</td>
+</tr>
+<tr>
+<td>3 speakers</td>
+<td><code>3speakers.wav</code></td>
+<td>Diarization adds load</td>
+</tr>
+<tr>
+<td>Cold start</td>
+<td>first window of any</td>
+<td>One-time model warm-up cost</td>
+</tr>
+</tbody></table>
+<h3 id="output-format">Output format</h3>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;hardware&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Apple M3 Pro, 18GB, macOS 14.5&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;model&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;whisperkit-large-v3-turbo (Q5)&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;thermal_state_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;nominal&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;cases&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;english_clean&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;rtf_avg&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.28</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;rtf_p95&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.41</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;windows&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">20</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    ...
+  <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;run_date&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-05-24T10:00:00Z&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Output committed to <code>bench/results/{date}-{git-sha}.json</code> so we have a regression history.</p>
+<h2 id="benchmark-2-end-to-end-latency">Benchmark 2: End-to-end latency</h2>
+<p><strong>Definition:</strong> time from &quot;word spoken&quot; to &quot;word visible in UI.&quot;
+<strong>Pass:</strong> ≤ 1.5s p95.
+<strong>Stretch:</strong> ≤ 1.0s p95.</p>
+<p>This is harder to automate because it requires actually playing audio and screen-recording the UI. Approach:</p>
+<h3 id="method">Method</h3>
+<ol>
+<li>Play a click-track WAV through an output device (BlackHole virtual audio device → ScreenCaptureKit)</li>
+<li>Each click is a known timestamp-encoded marker (e.g., DTMF tone encoding &quot;click N at t=X.XXs&quot;)</li>
+<li>Hark transcribes it as recognizable text (&quot;click one&quot;, &quot;click two&quot;, ...)</li>
+<li>Screen-record the UI at 60fps via <code>screencapture -V</code></li>
+<li>Run a small post-processor: detect the rendered text frame, subtract the click timestamp from the frame timestamp</li>
+<li>Output p50 / p95 / p99 latency over 100+ clicks</li>
+</ol>
+<h3 id="cases">Cases</h3>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Continuous speech</td>
+<td>Worst case for sliding-window batching</td>
+</tr>
+<tr>
+<td>Burst speech with gaps</td>
+<td>VAD-driven boundary triggers fast finalization</td>
+</tr>
+<tr>
+<td>Cold start</td>
+<td>First word latency (model warm-up)</td>
+</tr>
+</tbody></table>
+<h2 id="benchmark-3-memory--cpu">Benchmark 3: Memory &amp; CPU</h2>
+<p><strong>Pass:</strong></p>
+<ul>
+<li>Idle (no recording): ≤ 2.5 GB total (engine + UI + models loaded)</li>
+<li>Recording: ≤ 4 GB total during 60-min meeting</li>
+<li>CPU: average ≤ 60% of one P-core during recording (ANE doesn&#39;t show up in CPU%; that&#39;s expected)</li>
+</ul>
+<h3 id="method-1">Method</h3>
+<ul>
+<li><code>instruments</code> template: Allocations + Activity Monitor + System Trace</li>
+<li>Record for 60 min synthetic audio, sample every 5s</li>
+<li>Output time-series, attach to release notes</li>
+</ul>
+<h3 id="things-to-watch-for">Things to watch for</h3>
+<ul>
+<li><strong>Memory leaks:</strong> RAM growth over a 4-hour session must be &lt; 100 MB. Larger = leak. Bisect with Instruments.</li>
+<li><strong>Thermal throttling:</strong> if RTF degrades &gt; 30% over the session, we&#39;re hitting throttle. Document the threshold.</li>
+<li><strong>Battery drain:</strong> 1-hour meeting should consume &lt; 15% battery on a typical M3 Pro. Measured via <code>pmset -g log</code>.</li>
+</ul>
+<h2 id="benchmark-4-word-error-rate-wer--quality-side-of-performance">Benchmark 4: Word Error Rate (WER) — quality side of &quot;performance&quot;</h2>
+<p>Speed without accuracy is useless. WER matters as much as RTF.</p>
+<p><strong>Pass:</strong></p>
+<ul>
+<li>English clean: &lt; 8% WER</li>
+<li>English noisy (real meeting): &lt; 12% WER</li>
+<li>Thai-English code-switch: &lt; 25% WER (this is hard for any model in 2026)</li>
+</ul>
+<h3 id="method-2">Method</h3>
+<ol>
+<li>Curate 5 reference meetings: 30 min each, hand-transcribed (the developer&#39;s own meetings, with consent and PII redacted before storing as fixtures — these stay LOCAL, never committed to a public repo)</li>
+<li>Run Hark on each, save the auto-transcript</li>
+<li>Use standard WER tool (<code>jiwer</code> or similar — runs locally, no network)</li>
+<li>Output per-meeting WER + segment-level WER for the worst-N segments</li>
+</ol>
+<h3 id="what-we-explicitly-dont-measure">What we explicitly don&#39;t measure</h3>
+<ul>
+<li>WER on LibriSpeech / Whisper paper conditions — already published, not predictive of real meetings</li>
+<li>BLEU/ROUGE on translation — too dependent on reference choice; user satisfaction (Tier 2 metric) is the real signal</li>
+</ul>
+<h2 id="benchmark-5-claude-api-cost--latency">Benchmark 5: Claude API cost &amp; latency</h2>
+<p><strong>Pass:</strong></p>
+<ul>
+<li>Summary of 60-min meeting: ≤ 30s wall-clock to full response, ≤ $0.03/run</li>
+<li>Q&amp;A query: ≤ 3s p95 to first token, ≤ $0.01/run</li>
+<li>Daily spend at 4hr meetings, 1 summary each, 5 Q&amp;A: ≤ $0.50</li>
+</ul>
+<h3 id="method-3">Method</h3>
+<ul>
+<li>Anthropic SDK already returns timing + usage in responses</li>
+<li>Log each call to <code>~/Library/Logs/Hark/claude-cost.log</code></li>
+<li>Weekly report: total spend, average per-call latency, cache hit rate</li>
+</ul>
+<p><strong>Cache hit rate target:</strong> ≥ 80% on system prompts (SUMMARY_PROMPT, QA_PROMPT, TRANSLATE_PROMPT). Below that, we&#39;re paying for prompt re-tokenization.</p>
+<h2 id="regression-policy">Regression policy</h2>
+<table>
+<thead>
+<tr>
+<th>Regression</th>
+<th>Severity</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RTF up &gt; 10% from last release</td>
+<td>High</td>
+<td>Bisect, block release until explained</td>
+</tr>
+<tr>
+<td>Latency p95 up &gt; 20%</td>
+<td>High</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>RAM growth &gt; 100 MB / hour during session</td>
+<td>Critical</td>
+<td>Block release, file leak ticket</td>
+</tr>
+<tr>
+<td>WER up &gt; 2 absolute points</td>
+<td>Medium</td>
+<td>Investigate; ship with note if explained (e.g., new language added)</td>
+</tr>
+<tr>
+<td>Claude API cost up &gt; 25% per equivalent action</td>
+<td>Medium</td>
+<td>Check cache hit rate, prompt structure</td>
+</tr>
+</tbody></table>
+<h2 id="tooling-well-need">Tooling we&#39;ll need</h2>
+<ul>
+<li><input disabled="" type="checkbox"> <code>bench/rtf.swift</code> — Swift CLI, harness for RTF</li>
+<li><input disabled="" type="checkbox"> <code>bench/latency/</code> — click-track generator + screen-recording post-processor (Swift + Python)</li>
+<li><input disabled="" type="checkbox"> <code>bench/wer/</code> — local WER calculator (jiwer or custom)</li>
+<li><input disabled="" type="checkbox"> <code>bench/results/</code> — regression history (committed as JSON)</li>
+<li><input disabled="" type="checkbox"> Instruments templates checked into <code>bench/instruments/</code></li>
+<li><input disabled="" type="checkbox"> <code>Makefile</code> or <code>scripts/bench-all.sh</code> — one command to run everything before release</li>
+</ul>
+<h2 id="phase-0--the-gono-go">Phase 0 — the go/no-go</h2>
+<p>The single benchmark that decides whether the entire stack is viable:</p>
+<p><strong>Goal:</strong> measure RTF for WhisperKit large-v3-turbo on the developer&#39;s M3 with a 60s realistic meeting sample. If RTF &gt; 0.7, the stack doesn&#39;t work — fallback options must be considered before proceeding.</p>
+<p><strong>Duration:</strong> 1 day to write the harness + run.
+<strong>Output:</strong> a single JSON file + a 1-paragraph go/no-go memo.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../product/02-success-metrics.html">Success metrics</a> — Tier 1 targets that these benchmarks verify</li>
+<li><a href="09-test-strategy.html">Test strategy</a> — how benchmarks fit the overall test approach</li>
+<li>Handoff doc — Phase 0 description</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#what-performance-means-here">What &amp;quot;performance&amp;quot; means here</a>
+<a class="toc-l2" href="#hardware-baseline">Hardware baseline</a>
+<a class="toc-l2" href="#benchmark-1-real-time-factor-rtf">Benchmark 1: Real-Time Factor (RTF)</a>
+<a class="toc-l3" href="#harness">Harness</a>
+<a class="toc-l3" href="#cases-to-measure">Cases to measure</a>
+<a class="toc-l3" href="#output-format">Output format</a>
+<a class="toc-l2" href="#benchmark-2-end-to-end-latency">Benchmark 2: End-to-end latency</a>
+<a class="toc-l3" href="#method">Method</a>
+<a class="toc-l3" href="#cases">Cases</a>
+<a class="toc-l2" href="#benchmark-3-memory--cpu">Benchmark 3: Memory &amp;amp; CPU</a>
+<a class="toc-l3" href="#method-1">Method</a>
+<a class="toc-l3" href="#things-to-watch-for">Things to watch for</a>
+<a class="toc-l2" href="#benchmark-4-word-error-rate-wer--quality-side-of-performance">Benchmark 4: Word Error Rate (WER) — quality side of &amp;quot;performance&amp;quot;</a>
+<a class="toc-l3" href="#method-2">Method</a>
+<a class="toc-l3" href="#what-we-explicitly-dont-measure">What we explicitly don&amp;#39;t measure</a>
+<a class="toc-l2" href="#benchmark-5-claude-api-cost--latency">Benchmark 5: Claude API cost &amp;amp; latency</a>
+<a class="toc-l3" href="#method-3">Method</a>
+<a class="toc-l2" href="#regression-policy">Regression policy</a>
+<a class="toc-l2" href="#tooling-well-need">Tooling we&amp;#39;ll need</a>
+<a class="toc-l2" href="#phase-0--the-gono-go">Phase 0 — the go/no-go</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

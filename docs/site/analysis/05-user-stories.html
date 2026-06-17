@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Stories · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a class="active" href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">User Stories</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="user-stories">User Stories</h1>
+<p>Organized by epic. Each story has acceptance criteria written as Given/When/Then so QA can lift them straight into test cases. Story IDs use the pattern <code>HARK-{epic}-{n}</code>.</p>
+<h2 id="epic-a--live-capture--transcription">Epic A — Live Capture &amp; Transcription</h2>
+<h3 id="hark-a-1-start-and-stop-recording-from-the-tray">HARK-A-1: Start and stop recording from the tray</h3>
+<blockquote>
+<p><strong>As</strong> a user mid-workday
+<strong>I want to</strong> start or stop transcription with one click from my menu bar
+<strong>So that</strong> I don&#39;t have to context-switch to a separate app when a meeting begins</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> Hark is running, <strong>When</strong> I click the tray icon and select &quot;Start recording&quot;, <strong>Then</strong> capture begins within 500ms and the tray icon turns red</li>
+<li><strong>Given</strong> capture is active, <strong>When</strong> I select &quot;Stop recording&quot;, <strong>Then</strong> capture ends, the meeting is auto-saved to the vault, and the tray icon returns to default</li>
+<li><strong>Given</strong> I have not granted ScreenCapture permission, <strong>When</strong> I click &quot;Start recording&quot;, <strong>Then</strong> the OS permission dialog appears and Hark waits for the result</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 4</p>
+<hr>
+<h3 id="hark-a-2-see-live-captions-of-the-meeting">HARK-A-2: See live captions of the meeting</h3>
+<blockquote>
+<p><strong>As</strong> a user in a meeting
+<strong>I want to</strong> see what&#39;s being said as captions on screen
+<strong>So that</strong> I can follow non-native-language speakers and not miss context</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> capture is active, <strong>When</strong> speech occurs, <strong>Then</strong> partial captions appear in the main window within 1.5s</li>
+<li><strong>Given</strong> a partial caption is displayed, <strong>When</strong> WhisperKit refines the segment with more context, <strong>Then</strong> the displayed text updates in place (no jarring flicker)</li>
+<li><strong>Given</strong> a VAD speech boundary is detected, <strong>Then</strong> the segment is finalized, locked, and appended to the persistent transcript</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 3–4</p>
+<hr>
+<h3 id="hark-a-3-pause-and-resume-capture-mid-meeting">HARK-A-3: Pause and resume capture mid-meeting</h3>
+<blockquote>
+<p><strong>As</strong> a privacy-conscious user
+<strong>I want to</strong> instantly pause capture when something sensitive comes up
+<strong>So that</strong> I retain control over what gets transcribed</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> capture is active, <strong>When</strong> I click the always-visible pause button, <strong>Then</strong> within 200ms no further audio is processed</li>
+<li><strong>Given</strong> capture is paused, <strong>Then</strong> a clear visual indicator shows &quot;PAUSED&quot; and the tray icon reflects it</li>
+<li><strong>Given</strong> capture is paused, <strong>When</strong> I click resume, <strong>Then</strong> capture continues and a gap marker (<code>--- paused for Xs ---</code>) is inserted into the transcript</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 4</p>
+<hr>
+<h3 id="hark-a-4-bookmark-a-moment-with-a-hotkey">HARK-A-4: Bookmark a moment with a hotkey</h3>
+<blockquote>
+<p><strong>As</strong> a user in a meeting
+<strong>I want to</strong> flag important moments with a single keystroke
+<strong>So that</strong> my post-meeting summary weights them and I can find them later</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> capture is active, <strong>When</strong> I press ⌘⇧B (default), <strong>Then</strong> the current timestamp is bookmarked and a brief visual confirmation appears</li>
+<li><strong>Given</strong> bookmarks exist, <strong>When</strong> the meeting is summarized, <strong>Then</strong> the LLM prompt explicitly lists bookmarked timestamps as &quot;user-flagged moments&quot;</li>
+<li><strong>Given</strong> a bookmark exists, <strong>When</strong> I view the saved meeting file, <strong>Then</strong> the bookmark is rendered as <code>&gt; 📌 [HH:MM:SS]</code> inline with the transcript</li>
+</ul>
+<p><strong>Priority:</strong> P1
+<strong>Phase:</strong> 4</p>
+<hr>
+<h2 id="epic-b--speakers">Epic B — Speakers</h2>
+<h3 id="hark-b-1-identify-different-speakers-in-a-meeting">HARK-B-1: Identify different speakers in a meeting</h3>
+<blockquote>
+<p><strong>As</strong> a user reviewing a meeting
+<strong>I want to</strong> see who said what
+<strong>So that</strong> I can attribute decisions and follow conversation threads</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> a meeting has been captured, <strong>When</strong> capture stops, <strong>Then</strong> FluidAudio diarization runs and segments are tagged with <code>Speaker 1</code>, <code>Speaker 2</code>, …</li>
+<li><strong>Given</strong> diarization completes, <strong>Then</strong> speaker segments are visually distinguished in the transcript (different colors or labels)</li>
+<li><strong>Given</strong> the meeting was a 1-person dictation, <strong>Then</strong> all segments are labeled <code>Speaker 1</code> without error</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 5</p>
+<hr>
+<h3 id="hark-b-2-tag-a-speaker-with-a-real-name">HARK-B-2: Tag a speaker with a real name</h3>
+<blockquote>
+<p><strong>As</strong> a user reviewing a meeting
+<strong>I want to</strong> assign a name to a <code>Speaker N</code> label
+<strong>So that</strong> future meetings recognize this person automatically</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> an unlabeled <code>Speaker N</code> is shown, <strong>When</strong> I click the label and type a name, <strong>Then</strong> all segments by that speaker in this meeting are renamed and the voice embedding is saved to <code>vault/.speakers/{slug}.json</code></li>
+<li><strong>Given</strong> a speaker has been tagged in a previous meeting, <strong>When</strong> a new meeting includes their voice, <strong>Then</strong> their segments auto-resolve to the saved name (cosine similarity &gt; threshold)</li>
+<li><strong>Given</strong> auto-resolution is uncertain (similarity in the ambiguous band), <strong>Then</strong> the segment is labeled <code>Speaker N (Alice?)</code> so the user can confirm</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 5</p>
+<hr>
+<h2 id="epic-c--translation">Epic C — Translation</h2>
+<h3 id="hark-c-1-translate-live-captions">HARK-C-1: Translate live captions</h3>
+<blockquote>
+<p><strong>As</strong> a bilingual user in a code-switching meeting
+<strong>I want to</strong> see captions translated into my second language as the meeting happens
+<strong>So that</strong> I can follow nuance even when speakers slip into a language I&#39;m less fluent in</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> translation is enabled in Settings, <strong>When</strong> a segment is finalized, <strong>Then</strong> a translated line appears below the original within 500ms (local mode) or 3s (Claude mode)</li>
+<li><strong>Given</strong> translation mode is &quot;Fast (local)&quot;, <strong>Then</strong> NLLB-200 CoreML is used; no network call occurs</li>
+<li><strong>Given</strong> translation mode is &quot;High quality (Claude)&quot;, <strong>Then</strong> the segment text is sent to Claude API and translation streams back</li>
+<li><strong>Given</strong> the user toggles modes mid-meeting, <strong>Then</strong> subsequent segments use the new mode without restart</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 6</p>
+<hr>
+<h2 id="epic-d--vault">Epic D — Vault</h2>
+<h3 id="hark-d-1-save-each-meeting-as-a-markdown-file">HARK-D-1: Save each meeting as a markdown file</h3>
+<blockquote>
+<p><strong>As</strong> a user with a long-term knowledge habit
+<strong>I want</strong> every meeting to land as a plain markdown file in my vault folder
+<strong>So that</strong> I can open, search, and edit my meetings with any tool (Obsidian, VS Code, grep)</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> a meeting ends, <strong>Then</strong> within 5s a file is written to <code>vault/hark/meetings/YYYY-MM-DD-{slug}.md</code></li>
+<li><strong>Given</strong> the file is written, <strong>Then</strong> it contains YAML frontmatter (date, duration, speakers, bookmarks count) and the transcript organized by speaker</li>
+<li><strong>Given</strong> the vault folder is a git repo, <strong>Then</strong> the new file is auto-committed with message <code>feat(meeting): add {slug}</code></li>
+<li><strong>Given</strong> the vault folder is NOT a git repo, <strong>Then</strong> Hark prompts once to initialize git, with explanation; user can decline and lose versioning</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 4–5</p>
+<hr>
+<h3 id="hark-d-2-auto-link-known-vault-terms-in-the-transcript">HARK-D-2: Auto-link known vault terms in the transcript</h3>
+<blockquote>
+<p><strong>As</strong> a user who has built up a vault of terms and projects
+<strong>I want</strong> the transcript to automatically link to my notes when those terms are mentioned
+<strong>So that</strong> the meeting connects to the rest of my knowledge</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I have <code>notes/camunda.md</code> in the vault, <strong>When</strong> &quot;Camunda&quot; appears in a finalized segment, <strong>Then</strong> the rendered transcript shows it as <code>[[Camunda]]</code></li>
+<li><strong>Given</strong> a term has multiple matching files, <strong>Then</strong> the most-recently-edited match wins</li>
+<li><strong>Given</strong> the user adds a new vault note, <strong>Then</strong> future transcripts include it without restart (FSEvents watcher updates the term index within 30s)</li>
+</ul>
+<p><strong>Priority:</strong> P1
+<strong>Phase:</strong> 5–6</p>
+<hr>
+<h3 id="hark-d-3-whisper-vocab-grows-from-vault">HARK-D-3: Whisper vocab grows from vault</h3>
+<blockquote>
+<p><strong>As</strong> a user with technical/domain jargon in my vault
+<strong>I want</strong> Hark to recognize those terms in audio more accurately
+<strong>So that</strong> WER on my actual meetings keeps improving with use</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> vault terms exist (note titles + frontmatter tags), <strong>When</strong> Hark starts a recording, <strong>Then</strong> the WhisperKit initial-prompt includes the top-N most-relevant terms (recency + frequency weighted)</li>
+<li><strong>Given</strong> the initial-prompt is built, <strong>Then</strong> it never exceeds WhisperKit&#39;s prompt-token limit (truncate gracefully)</li>
+</ul>
+<p><strong>Priority:</strong> P1
+<strong>Phase:</strong> 5–6</p>
+<hr>
+<h2 id="epic-e--intelligence">Epic E — Intelligence</h2>
+<h3 id="hark-e-1-summarize-the-meeting">HARK-E-1: Summarize the meeting</h3>
+<blockquote>
+<p><strong>As</strong> a user who just finished a meeting
+<strong>I want</strong> a structured summary with action items, decisions, and open questions
+<strong>So that</strong> I can act on the meeting in 2 minutes instead of re-reading the transcript</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> a meeting file exists, <strong>When</strong> I click &quot;Summarize&quot;, <strong>Then</strong> the transcript + bookmarks are sent to Claude and a streamed summary appears</li>
+<li><strong>Given</strong> the summary completes, <strong>Then</strong> the meeting file is updated with sections: <code>## TL;DR</code>, <code>## Action Items</code>, <code>## Decisions</code>, <code>## Open Questions</code>, <code>## Chapters</code></li>
+<li><strong>Given</strong> the meeting file is updated, <strong>Then</strong> git auto-commits the change</li>
+<li><strong>Given</strong> redact-before-send is enabled, <strong>Then</strong> detected PII (emails, phone numbers, ID numbers) is stripped from the prompt before send</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 6</p>
+<hr>
+<h3 id="hark-e-2-ask-the-vault-a-question-during-a-meeting">HARK-E-2: Ask the vault a question during a meeting</h3>
+<blockquote>
+<p><strong>As</strong> a user mid-meeting who forgot a prior decision
+<strong>I want</strong> to ask my vault a question without leaving the meeting context
+<strong>So that</strong> I can contribute informed answers in real time</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> capture is active and I press ⌘⇧Q, <strong>Then</strong> the Q&amp;A side-panel opens within 200ms</li>
+<li><strong>Given</strong> I type and submit a question, <strong>Then</strong> local RAG retrieves top-K relevant chunks, Claude streams an answer within 3s p95, and citations link to source files</li>
+<li><strong>Given</strong> I click a citation, <strong>Then</strong> the cited file opens in a side panel (does NOT navigate away from live captions)</li>
+<li><strong>Given</strong> the Anthropic API is unreachable, <strong>Then</strong> local search results are shown as a fallback with a &quot;Q&amp;A offline&quot; notice</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 6</p>
+<hr>
+<h3 id="hark-e-3-see-definitions-of-detected-terms-inline">HARK-E-3: See definitions of detected terms inline</h3>
+<blockquote>
+<p><strong>As</strong> a user in a meeting where unfamiliar terms come up
+<strong>I want</strong> to see definitions from my vault appear inline next to the transcript
+<strong>So that</strong> I get context without typing a query</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> a vault-known term is detected in a finalized segment, <strong>Then</strong> an unobtrusive inline card appears on the side showing the term&#39;s note excerpt</li>
+<li><strong>Given</strong> the inline card is shown, <strong>When</strong> I click it, <strong>Then</strong> the full note opens in a side panel</li>
+<li><strong>Given</strong> more than 5 terms are detected in 10 seconds, <strong>Then</strong> only the most-recent 3 are displayed (avoid wall of cards)</li>
+</ul>
+<p><strong>Priority:</strong> P2
+<strong>Phase:</strong> 6</p>
+<hr>
+<h2 id="epic-f--trust--privacy">Epic F — Trust &amp; Privacy</h2>
+<h3 id="hark-f-1-honor-redact-before-send-for-the-claude-api-path">HARK-F-1: Honor &quot;redact before send&quot; for the Claude API path</h3>
+<blockquote>
+<p><strong>As</strong> a privacy-conscious user
+<strong>I want</strong> PII automatically stripped before any transcript text is sent to Claude
+<strong>So that</strong> even my cloud-touching workflows minimize exposure</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> redact-before-send is ON (default), <strong>Then</strong> before any Claude API call, the prompt passes through a redactor that replaces detected emails, phone numbers, national-ID-format strings, and tagged speaker names with placeholders</li>
+<li><strong>Given</strong> redact-before-send is ON, <strong>Then</strong> the redaction log is written to <code>~/Library/Logs/Hark/</code> (local) so the user can audit what was replaced</li>
+<li><strong>Given</strong> redact-before-send is OFF (user explicitly opted out), <strong>Then</strong> a persistent banner reminds the user with &quot;Redaction OFF&quot; until they re-enable</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> 6–7</p>
+<hr>
+<h3 id="hark-f-2-verify-no-audio-leaves-the-machine">HARK-F-2: Verify no audio leaves the machine</h3>
+<blockquote>
+<p><strong>As</strong> a user trusting the local-first claim
+<strong>I want</strong> to be able to verify Hark never sends audio anywhere
+<strong>So that</strong> the trust promise is auditable, not just stated</p>
+</blockquote>
+<p><strong>Acceptance criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> the user reviews Settings → Privacy, <strong>Then</strong> a page shows: &quot;Audio is never sent over the network. Only transcript text and only when you invoke summary, translate, or Q&amp;A.&quot;</li>
+<li><strong>Given</strong> a release build, <strong>Then</strong> the <code>privacy-auditor</code> agent has been run and produced 0 BLOCKER findings (enforced in release checklist)</li>
+<li><strong>Given</strong> the Anthropic SDK is used, <strong>Then</strong> it is configured with no audio modality, only text — verified by a unit test that fails if audio bytes are passed</li>
+</ul>
+<p><strong>Priority:</strong> P0
+<strong>Phase:</strong> All</p>
+<hr>
+<h2 id="out-of-scope-stories-recorded-so-they-dont-sneak-in">Out-of-scope stories (recorded so they don&#39;t sneak in)</h2>
+<ul>
+<li>HARK-X-1: <del>Auto-join Zoom meetings via deep link</del> — out of scope, v1</li>
+<li>HARK-X-2: <del>Sync vault to iCloud Drive</del> — v2 maybe, requires threat-model rework</li>
+<li>HARK-X-3: <del>Share speaker fingerprints across teammates</del> — v2 only</li>
+<li>HARK-X-4: <del>Pull attendees from Outlook calendar</del> — blocked by corporate IT</li>
+<li>HARK-X-5: <del>Real-time sentiment analysis</del> — gimmicky, dropped</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="04-user-journeys.html">User journeys</a> — the flows these stories compose into</li>
+<li><a href="../qa/09-test-strategy.html">Test strategy</a> — how acceptance criteria turn into test cases</li>
+<li><a href="../product/03-roadmap.html">Roadmap</a> — when each epic lands</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#epic-a--live-capture--transcription">Epic A — Live Capture &amp;amp; Transcription</a>
+<a class="toc-l3" href="#hark-a-1-start-and-stop-recording-from-the-tray">HARK-A-1: Start and stop recording from the tray</a>
+<a class="toc-l3" href="#hark-a-2-see-live-captions-of-the-meeting">HARK-A-2: See live captions of the meeting</a>
+<a class="toc-l3" href="#hark-a-3-pause-and-resume-capture-mid-meeting">HARK-A-3: Pause and resume capture mid-meeting</a>
+<a class="toc-l3" href="#hark-a-4-bookmark-a-moment-with-a-hotkey">HARK-A-4: Bookmark a moment with a hotkey</a>
+<a class="toc-l2" href="#epic-b--speakers">Epic B — Speakers</a>
+<a class="toc-l3" href="#hark-b-1-identify-different-speakers-in-a-meeting">HARK-B-1: Identify different speakers in a meeting</a>
+<a class="toc-l3" href="#hark-b-2-tag-a-speaker-with-a-real-name">HARK-B-2: Tag a speaker with a real name</a>
+<a class="toc-l2" href="#epic-c--translation">Epic C — Translation</a>
+<a class="toc-l3" href="#hark-c-1-translate-live-captions">HARK-C-1: Translate live captions</a>
+<a class="toc-l2" href="#epic-d--vault">Epic D — Vault</a>
+<a class="toc-l3" href="#hark-d-1-save-each-meeting-as-a-markdown-file">HARK-D-1: Save each meeting as a markdown file</a>
+<a class="toc-l3" href="#hark-d-2-auto-link-known-vault-terms-in-the-transcript">HARK-D-2: Auto-link known vault terms in the transcript</a>
+<a class="toc-l3" href="#hark-d-3-whisper-vocab-grows-from-vault">HARK-D-3: Whisper vocab grows from vault</a>
+<a class="toc-l2" href="#epic-e--intelligence">Epic E — Intelligence</a>
+<a class="toc-l3" href="#hark-e-1-summarize-the-meeting">HARK-E-1: Summarize the meeting</a>
+<a class="toc-l3" href="#hark-e-2-ask-the-vault-a-question-during-a-meeting">HARK-E-2: Ask the vault a question during a meeting</a>
+<a class="toc-l3" href="#hark-e-3-see-definitions-of-detected-terms-inline">HARK-E-3: See definitions of detected terms inline</a>
+<a class="toc-l2" href="#epic-f--trust--privacy">Epic F — Trust &amp;amp; Privacy</a>
+<a class="toc-l3" href="#hark-f-1-honor-redact-before-send-for-the-claude-api-path">HARK-F-1: Honor &amp;quot;redact before send&amp;quot; for the Claude API path</a>
+<a class="toc-l3" href="#hark-f-2-verify-no-audio-leaves-the-machine">HARK-F-2: Verify no audio leaves the machine</a>
+<a class="toc-l2" href="#out-of-scope-stories-recorded-so-they-dont-sneak-in">Out-of-scope stories (recorded so they don&amp;#39;t sneak in)</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebSocket API Contract — Engine ↔ UI · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a class="active" href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">WebSocket API Contract — Engine ↔ UI</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-06-02</span></div>
+    <h1 id="websocket-api-contract">WebSocket API Contract</h1>
+<p>The localhost WebSocket between the Swift engine and the Electron UI. This is the <strong>only</strong> IPC channel between them — keep it disciplined or both sides drift.</p>
+<h2 id="connection">Connection</h2>
+<ul>
+<li><strong>Endpoint:</strong> <code>ws://127.0.0.1:{PORT}/v1</code></li>
+<li><strong>Port:</strong> picked at engine startup from ephemeral range, written to <code>~/Library/Application Support/Hark/engine.port</code>. UI reads the file. Avoids port collisions across versions.</li>
+<li><strong>Auth:</strong> none required (loopback only). Engine rejects non-loopback connections.</li>
+<li><strong>Protocol:</strong> JSON messages, one per WebSocket frame. UTF-8.</li>
+<li><strong>Reconnect:</strong> UI side, exponential backoff starting at 200ms, capped at 5s.</li>
+</ul>
+<h2 id="message-envelope">Message envelope</h2>
+<p>Every message has these top-level fields:</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;v&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid-v4-or-null&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;namespace.action&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-05-24T10:30:00.123Z&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* type-specific */</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<ul>
+<li><code>v</code> — protocol version. Hard-fail on mismatch with a <code>meta.protocol_mismatch</code> event.</li>
+<li><code>id</code> — correlation ID for request/response pairs. <code>null</code> for unsolicited events.</li>
+<li><code>type</code> — dot-namespaced action name. See <a href="#message-catalog">Message catalog</a>.</li>
+<li><code>ts</code> — ISO 8601 with milliseconds.</li>
+<li><code>payload</code> — action-specific data.</li>
+</ul>
+<h2 id="direction-conventions">Direction conventions</h2>
+<ul>
+<li><strong>UI → Engine:</strong> commands (verb form: <code>capture.start</code>, <code>meeting.summarize</code>)</li>
+<li><strong>Engine → UI:</strong> events (past-tense or descriptive: <code>segment.partial</code>, <code>capture.started</code>, <code>warning</code>)</li>
+<li>Commands are acknowledged with <code>{type: &quot;ack&quot;, id: &lt;req.id&gt;}</code> or <code>{type: &quot;error&quot;, id: &lt;req.id&gt;, payload: {code, message}}</code></li>
+</ul>
+<h2 id="message-catalog">Message catalog</h2>
+<h3 id="lifecycle">Lifecycle</h3>
+<h4 id="capturestart-ui-→-engine"><code>capture.start</code> (UI → Engine)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;capture.start&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;sources&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;mic&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;system&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;translation&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;enabled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;mode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fast&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;target_lang&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;en&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><strong>Response:</strong> <code>ack</code> then <code>capture.started</code> event with chosen sample rate, devices, model info.</p>
+<h4 id="capturestop-ui-→-engine"><code>capture.stop</code> (UI → Engine)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;capture.stop&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span>
+</code></pre>
+<p><strong>Response:</strong> <code>ack</code>, then <code>capture.stopped</code>, then (async) <code>meeting.saved</code>.</p>
+<h4 id="capturepause--captureresume-ui-→-engine"><code>capture.pause</code> / <code>capture.resume</code> (UI → Engine)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;capture.pause&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span>
+</code></pre>
+<p><strong>Response:</strong> <code>ack</code>, then <code>capture.paused</code> / <code>capture.resumed</code> event.</p>
+<h4 id="capturestarted-engine-→-ui"><code>capture.started</code> (Engine → UI)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;capture.started&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;session_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;sample_rate_hz&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">16000</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;channels&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;model&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;whisperkit-large-v3-turbo&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;vad&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;silero-v5&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;started_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-05-24T10:30:00Z&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 id="capturestopped-engine-→-ui"><code>capture.stopped</code> (Engine → UI)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;capture.stopped&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;session_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;duration_sec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2715</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<hr>
+<h3 id="transcription-stream">Transcription stream</h3>
+<h4 id="segmentpartial-engine-→-ui"><code>segment.partial</code> (Engine → UI)</h4>
+<p>Emitted as WhisperKit refines an in-progress utterance. The UI replaces the last partial for the same <code>utterance_id</code>.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;segment.partial&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;utterance_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;t_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12.34</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;t_end&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">15.67</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;text&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;We should consider the Camunda...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;language&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;en&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 id="segmentfinal-engine-→-ui"><code>segment.final</code> (Engine → UI)</h4>
+<p>Emitted when VAD ends the utterance. The UI locks this segment.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;segment.final&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;utterance_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;segment_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;t_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12.34</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;t_end&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">18.90</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;text&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;We should consider the Camunda migration timing.&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;language&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;en&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;speaker&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Speaker 2&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;translation&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;text&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Wir sollten...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;lang&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;de&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><code>speaker</code> is provisional during the meeting (acoustic cluster only); resolved to real names after <code>meeting.saved</code>.</p>
+<h4 id="bookmarkcreate-ui-→-engine"><code>bookmark.create</code> (UI → Engine)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bookmark.create&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;t&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1234.5</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;label&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;decision&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><code>label</code> is one of: <code>&quot;plain&quot; | &quot;decision&quot; | &quot;question&quot; | &quot;todo&quot;</code>. Default <code>&quot;plain&quot;</code>.</p>
+<h4 id="bookmarkcreated-engine-→-ui"><code>bookmark.created</code> (Engine → UI)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bookmark.created&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;bookmark_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;t&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1234.5</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;label&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;decision&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<hr>
+<h3 id="diarization--speaker-matching">Diarization &amp; speaker matching</h3>
+<h4 id="meetingtranscript-engine-→-ui--implemented"><code>meeting.transcript</code> (Engine → UI) — IMPLEMENTED</h4>
+<p>Fired <strong>once</strong> per meeting at <code>capture.stop</code>, after diarization + vault write,
+<strong>JUST BEFORE</strong> <a href="#meetingsaved-engine--ui"><code>meeting.saved</code></a>. It carries the
+<strong>deduped, &quot;Speaker N&quot;-labeled</strong> final transcript — <strong>byte-for-byte the same set
+of utterances written to the vault markdown body</strong> (built from the identical
+<code>[VaultWriter.Utterance]</code> set the writer was handed; the engine does not re-derive
+a different set). Its purpose is to let the UI <strong>back-annotate speakers onto the
+on-screen transcript</strong>.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meeting.transcript&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;session_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;utterances&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;u0&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;t_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12.34</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;text&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;We should consider the Camunda migration.&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;speaker&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Speaker 1&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;u1&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;t_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">18.90</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;text&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Agreed — let&#x27;s revisit timing next sprint.&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;speaker&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Speaker 2&quot;</span> <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<ul>
+<li><strong>Why it exists — offline diarization.</strong> Diarization is a <strong>post-stop batch
+pass</strong>, not a live one. Every live <a href="#segmentfinal-engine--ui"><code>segment.final</code></a>
+ships <code>speaker: null</code> (and <code>segment.partial</code> carries no speaker at all). So until
+this frame, speaker labels existed <strong>only</strong> in the written vault file and in the
+<a href="#meetingsaved-engine--ui"><code>meeting.saved</code></a> roster — never back on the live
+on-screen transcript. This frame closes that gap.</li>
+<li><strong>Full replacement, not a merge.</strong> The UI treats <code>utterances</code> as a <strong>complete
+replacement</strong> of the displayed transcript for this <code>session_id</code>: it clears the
+live segment map and repopulates it from <code>utterances</code>, each rendered as a
+finalized line with its <code>speaker</code> set. It does <strong>not</strong> reconcile against the live
+<code>utterance_id</code>s.</li>
+<li><strong><code>id</code> is fresh, NOT a live <code>utterance_id</code>.</strong> Each <code>id</code> is an index-based stable
+key minted for this frame (<code>&quot;u0&quot;</code>, <code>&quot;u1&quot;</code>, … in chronological / <code>t_start</code> order)
+for the UI&#39;s <code>@for</code> track. It deliberately does <strong>not</strong> correspond to any live
+<code>utterance_id</code> from <code>segment.partial</code>/<code>segment.final</code>, because the live utterances
+were re-segmented and deduped on the way to the vault. Do not try to match these
+ids back to live segments — the live set is being thrown away and replaced.</li>
+<li><strong>Fields.</strong> <code>id</code> (string), <code>t_start</code> (number, seconds since capture start),
+<code>text</code> (string), <code>speaker</code> (string — the <code>&quot;Speaker N&quot;</code> label). <strong>All four are
+non-optional / non-nullable</strong> on both sides — there is no <code>null</code> here (contrast
+<code>segment.final.speaker</code>, which is always <code>null</code> during a meeting). There is no
+<code>t_end</code> / <code>language</code> / <code>translation</code> on the wire; the UI point-anchors each line
+at <code>t_start</code> and leaves those null locally.</li>
+<li><strong>Relationship to <code>meeting.saved</code>.</strong> Same <code>session_id</code> (and the same value the
+later <a href="#speakerrename-ui--engine--implemented"><code>speaker.rename</code></a> command targets),
+scoping the replacement to one meeting. <code>meeting.transcript</code> carries the <strong>body</strong>
+(the labeled lines); <code>meeting.saved</code>, sent immediately after, carries the
+<strong>roster</strong> (<code>speakers[]</code>), <code>vault_path</code>, and <code>stats</code>. The labels in
+<code>meeting.transcript.utterances[].speaker</code> are exactly the roster labels in
+<code>meeting.saved.speakers[].label</code>.</li>
+<li><strong>Wire-encoding note.</strong> <code>session_id</code> ⇄ Swift <code>sessionId</code> and <code>t_start</code> ⇄ Swift
+<code>tStart</code> via the outbound encoder&#39;s <code>.convertToSnakeCase</code>; <code>id</code> / <code>text</code> /
+<code>speaker</code> / <code>utterances</code> are single-word and pass through unchanged. Because
+every field is non-optional, the synthesized Swift <code>encode(to:)</code> is sufficient —
+no explicit <code>encodeNil</code> is needed (unlike <code>segment.final</code> / <code>meeting.saved</code>&#39;s
+nested nullables).</li>
+<li><strong>Not replayed on reconnect.</strong> This is a one-shot event tied to a stop. The
+engine does <strong>not</strong> retain a snapshot to replay to a client that connects later
+(unlike <code>meta.model_progress</code>). A UI that reconnects after a meeting was saved
+re-derives that meeting&#39;s content by reading the vault file directly, not from
+this frame.</li>
+</ul>
+<h4 id="meetingsaved-engine-→-ui"><code>meeting.saved</code> (Engine → UI)</h4>
+<p>Fired after stop, diarization, and vault write all complete.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meeting.saved&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;session_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;vault_path&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/Users/.../vault/hark/meetings/2026-05-24-q2-planning.md&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;speakers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;label&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Speaker 1&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;matched_name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Alice Chen&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;confidence&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.91</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;label&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Speaker 2&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;matched_name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;confidence&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span> <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;segments&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">142</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;duration_sec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2715</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;rtf_avg&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.31</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 id="speakerrename-ui-→-engine--implemented"><code>speaker.rename</code> (UI → Engine) — IMPLEMENTED</h4>
+<p>Renames one or more speakers in an already-saved meeting. This is a <strong>post-save</strong>
+operation: diarization runs as a post-<code>capture.stop</code> batch pass, so <code>&quot;Speaker N&quot;</code>
+labels exist <strong>only</strong> in the written vault markdown (live <code>segment.final</code> frames
+carry <code>speaker: null</code>). Renaming is therefore a re-render of that file with the
+user&#39;s chosen display names, followed by a git commit.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;speaker.rename&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;session_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;uuid&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;names&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;Speaker 1&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Alice&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;Speaker 2&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Bob&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<ul>
+<li><code>names</code> maps each speaker&#39;s <strong>current</strong> label (the key the engine knows — e.g.
+<code>&quot;Speaker 1&quot;</code>, or a previously-applied name on a second edit) to a new display
+name. The UI sends <strong>only</strong> the rows that actually changed; an empty map is a
+no-op (the UI suppresses the send entirely).</li>
+<li><code>session_id</code> scopes the edit to one meeting. <strong>MVP: only the single
+most-recently-saved meeting is renameable.</strong> A mismatch returns
+<code>error{code:&quot;MEETING_NOT_FOUND&quot;, recoverable:true}</code>.</li>
+</ul>
+<p><strong>Wire-encoding note (load-bearing):</strong> the engine decodes inbound with
+<code>JSONDecoder.keyDecodingStrategy = .convertFromSnakeCase</code>. That strategy
+transforms <strong>struct property names only</strong> — <code>session_id</code> → <code>sessionId</code> — but does
+<strong>not</strong> touch the keys or values of a <code>[String:String]</code> dictionary. So the <code>names</code>
+map keys pass through verbatim: <code>&quot;Speaker 1&quot;</code> stays <code>&quot;Speaker 1&quot;</code> (and a key that
+happens to look like snake_case, e.g. <code>&quot;speaker_one&quot;</code>, would also pass through
+unchanged). Verified empirically. The TS <code>payload.names: Record&lt;string,string&gt;</code>
+and the Swift <code>SpeakerRenameCommand.names: [String:String]</code> are in exact lockstep.</p>
+<p><strong>Response:</strong> <code>ack</code> on success (the engine has re-rendered the same vault file in
+place at its existing path and git-committed the change), or an <code>error</code> frame on
+failure (<code>MEETING_NOT_FOUND</code> if <code>session_id</code> isn&#39;t the most-recent meeting;
+<code>PROTOCOL_MISMATCH</code> for a malformed payload; <code>INTERNAL</code> if the rewrite/commit
+fails). There is <strong>no</strong> dedicated inbound success frame — the UI keys off <code>ack</code>.</p>
+<blockquote>
+<p><strong>Supersedes the earlier <code>speaker.tag</code> sketch.</strong> A never-implemented
+single-label <code>speaker.tag {session_id, speaker_label, name}</code> previously lived
+here. <code>speaker.rename</code> replaces it: it is <strong>batch</strong> (<code>names:{label:name}</code>),
+matches the shipped engine + UI code, and does <strong>not</strong> (yet) write
+<code>vault/.speakers/*.json</code> enrollment profiles — that voice-enrollment piece is
+deferred to Phase 5.1. Speaker rename in the MVP only rewrites the meeting&#39;s own
+markdown file.</p>
+</blockquote>
+<hr>
+<h3 id="term-capture">Term capture</h3>
+<h4 id="termdetected-engine-→-ui"><code>term.detected</code> (Engine → UI)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;term.detected&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;term&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Camunda&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;vault_path&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;notes/camunda.md&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;excerpt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Camunda is a BPMN workflow engine we use for...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;t_start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">18.5</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>UI renders an inline card next to the live transcript.</p>
+<hr>
+<h3 id="warnings--errors">Warnings &amp; errors</h3>
+<h4 id="warning-engine-→-ui-unsolicited"><code>warning</code> (Engine → UI, unsolicited)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;warning&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rtf_high&quot;</span> | <span class="hljs-string">&quot;sck_lost&quot;</span> | <span class="hljs-string">&quot;model_warmup&quot;</span> | <span class="hljs-string">&quot;disk_low&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Transcription falling behind (RTF=1.2)&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;severity&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;low&quot;</span> | <span class="hljs-string">&quot;medium&quot;</span> | <span class="hljs-string">&quot;high&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 id="error-engine-→-ui-response-or-unsolicited"><code>error</code> (Engine → UI, response or unsolicited)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;error&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;req-id-if-response&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;PERMISSION_DENIED&quot;</span> | <span class="hljs-string">&quot;MODEL_LOAD_FAILED&quot;</span> | <span class="hljs-string">&quot;DISK_FULL&quot;</span> | <span class="hljs-string">&quot;INTERNAL&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ScreenCapture permission required&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;recoverable&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;action&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;open_system_settings&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<hr>
+<h3 id="meta">Meta</h3>
+<h4 id="metahello-engine-→-ui-on-connect"><code>meta.hello</code> (Engine → UI on connect)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meta.hello&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;engine_version&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.1.0&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;protocol_version&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;model_loaded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;whisperkit-large-v3-turbo&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;capabilities&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;translation.local&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;translation.cloud&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;diarization&quot;</span><span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><strong><code>model_loaded</code> is <code>&quot;(loading)&quot;</code> until the model is ready.</strong> harkd brings up the
+WebSocket + writes the port file <em>before</em> the model finishes loading, so the very
+first client to connect on a cold start sees <code>model_loaded: &quot;(loading)&quot;</code> here, and
+then a separate <code>meta.ready</code> frame once load completes (see below). A client that
+connects <em>after</em> the model is already loaded gets the real model name in
+<code>meta.hello</code> and <strong>no</strong> <code>meta.ready</code>. The UI treats <code>model_loaded !== &quot;(loading)&quot;</code>
+in <code>meta.hello</code> as &quot;already ready&quot;. The <code>capabilities</code> array advertises only what
+this build actually ships (current builds: <code>[&quot;diarization&quot;]</code>; translation is not
+built yet, so it is deliberately omitted — keep it honest).</p>
+<h4 id="metaready-engine-→-ui-unsolicited"><code>meta.ready</code> (Engine → UI, unsolicited)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meta.ready&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;model_loaded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;whisperkit-large-v3-turbo&quot;</span> <span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Pushed once, the moment the model finishes loading, to <strong>every already-connected
+client</strong> that saw <code>meta.hello.model_loaded === &quot;(loading)&quot;</code>. This is the
+<strong>terminal</strong> readiness signal — the UI ungates Start on it. It also clears any
+in-flight <code>meta.model_progress</code> (the warm-up overlay tears down). Not sent to
+clients that connected after load (they already learned the model name from
+<code>meta.hello</code>).</p>
+<h4 id="metamodel_progress-engine-→-ui-unsolicited--cold-start-warm-up"><code>meta.model_progress</code> (Engine → UI, unsolicited — cold-start warm-up)</h4>
+<p>Emitted <strong>only</strong> during a cold start, while harkd downloads and ANE-compiles the
+speech (WhisperKit, ~626 MB) and diarizer (FluidAudio CoreML) bundles — i.e. in
+the window <em>before</em> <code>meta.ready</code>. Drives the first-run &quot;Preparing Hark&quot; overlay so
+a fresh install doesn&#39;t look hung. <strong>Purely additive: it never affects readiness.</strong>
+<code>meta.ready</code> remains the single terminal readiness signal.</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meta.model_progress&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;phase&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;downloading_speech&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;fraction&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.42</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;detail&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Downloading speech model&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<ul>
+<li><code>phase</code> (string) — a stable machine token, one of:
+<code>&quot;downloading_speech&quot; | &quot;optimizing_speech&quot; | &quot;downloading_diarizer&quot; | &quot;optimizing_diarizer&quot;</code>.
+It is a payload <strong>value</strong>, not a key, so the engine&#39;s <code>.convertToSnakeCase</code> key
+strategy leaves it untouched — the literal snake_case form on the wire is what is
+shown above.</li>
+<li><code>fraction</code> (number <strong>or <code>null</code></strong>) — <code>0..1</code> for the byte-counted <strong>download</strong>
+phases. <strong><code>null</code> for the ANE compile / optimize phases</strong>, which expose no
+progress API. This distinction is <strong>load-bearing</strong>: the UI renders a determinate
+progress <strong>bar</strong> for a numeric <code>fraction</code> and an indeterminate <strong>spinner</strong> when
+<code>fraction</code> is <code>null</code>. The engine encodes the null case as an explicit JSON
+<code>&quot;fraction&quot;: null</code> (not a dropped key — same explicit-<code>encodeNil</code> pattern as
+<code>SegmentPayload</code>/<code>meeting.saved</code>&#39;s nested nullables), so the UI can tell
+&quot;indeterminate&quot; (<code>null</code>) apart from &quot;absent&quot;. Do not let the key be omitted.</li>
+<li><code>detail</code> (string) — a human-readable label to display, e.g.
+<code>&quot;Downloading speech model&quot;</code>. Display-only; do not parse it.</li>
+</ul>
+<p><strong>Throttling:</strong> the underlying loader callbacks (FluidAudio&#39;s per-byte download
+callback, WhisperKit&#39;s per-1% callback) fire very frequently. The caller throttles
+<strong>before</strong> the actor hop; <code>emitModelProgress</code> itself just snapshots + broadcasts.</p>
+<p><strong>Snapshot replay to late clients:</strong> the engine retains the most recent
+<code>meta.model_progress</code> and replays it (once) to a client that connects mid-download,
+right after <code>meta.hello</code>, so a UI opened part-way through a cold start sees the
+current phase/fraction immediately instead of waiting for the next callback. Same
+spirit as <code>meta.ready</code> being pushed to already-connected clients. The snapshot is
+cleared once <code>meta.ready</code> fires; late progress callbacks arriving after readiness
+are dropped (not re-broadcast, and they do not resurrect the snapshot).</p>
+<p><strong>UI teardown:</strong> the UI clears its <code>meta.model_progress</code> state — and thus the
+overlay — on <code>meta.ready</code> and on socket close (a reconnect re-derives warm-up
+state from a fresh <code>meta.hello</code>).</p>
+<h4 id="metaheartbeat-bidirectional-every-5s"><code>meta.heartbeat</code> (bidirectional, every 5s)</h4>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;meta.heartbeat&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;payload&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;rtf_current&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.42</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;ring_buffer_fill_sec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1.2</span> <span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Engine includes live metrics; UI sends an empty payload. If 3 heartbeats are missed, the other side considers the connection dead.</p>
+<hr>
+<h2 id="what-is-not-in-this-protocol">What is NOT in this protocol</h2>
+<p>Deliberately kept out:</p>
+<ul>
+<li><strong>Audio data.</strong> Audio never leaves the engine process. Period.</li>
+<li><strong>Speaker embeddings.</strong> Stay in the engine + vault. The UI gets names only.</li>
+<li><strong>Claude API calls.</strong> Owned by Electron Main process directly, not proxied through the engine. Separation of concerns: engine = audio, main = network.</li>
+<li><strong>Vault file contents.</strong> UI reads vault files directly via Node <code>fs</code>; engine writes them. They share a folder, not a channel.</li>
+</ul>
+<h2 id="versioning">Versioning</h2>
+<ul>
+<li><code>v</code> field in envelope bumps on breaking change.</li>
+<li>Engine and UI ship together — protocol version is locked per release.</li>
+<li>If versions mismatch on connect (e.g., UI is newer than engine after a partial update), the side that detects it emits <code>meta.protocol_mismatch</code> and the UI prompts the user to restart.</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="06-architecture-overview.html">Architecture overview</a></li>
+<li><a href="07-data-flows.html">Data flows</a> — flows that reference these message types</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#connection">Connection</a>
+<a class="toc-l2" href="#message-envelope">Message envelope</a>
+<a class="toc-l2" href="#direction-conventions">Direction conventions</a>
+<a class="toc-l2" href="#message-catalog">Message catalog</a>
+<a class="toc-l3" href="#lifecycle">Lifecycle</a>
+<a class="toc-l3" href="#transcription-stream">Transcription stream</a>
+<a class="toc-l3" href="#diarization--speaker-matching">Diarization &amp;amp; speaker matching</a>
+<a class="toc-l3" href="#term-capture">Term capture</a>
+<a class="toc-l3" href="#warnings--errors">Warnings &amp;amp; errors</a>
+<a class="toc-l3" href="#meta">Meta</a>
+<a class="toc-l2" href="#what-is-not-in-this-protocol">What is NOT in this protocol</a>
+<a class="toc-l2" href="#versioning">Versioning</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

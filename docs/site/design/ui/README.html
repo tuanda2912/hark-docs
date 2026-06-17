@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handoff: Hark — Local-First Meeting Transcription (macOS) · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../../product/02-success-metrics.html">Success Metrics</a>
+<a href="../../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a class="active" href="../../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Handoff: Hark — Local-First Meeting Transcription (macOS)</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    
+    <h1 id="handoff-hark--local-first-meeting-transcription-macos">Handoff: Hark — Local-First Meeting Transcription (macOS)</h1>
+<h2 id="overview">Overview</h2>
+<p>Hark is a local-first macOS meeting transcription app with live captions, speaker diarization + voiceprint memory, translation, post-meeting summaries, and a Markdown vault. This bundle contains the <strong>UI/UX design pass</strong> covering nine surfaces of the product, from the menubar tray through the main window, post-meeting review, settings, onboarding, docs site, and an interactive speaker-tagging flow.</p>
+<p>The defining product position is <strong>trust</strong>: audio never leaves the Mac, voiceprints stay in the user&#39;s vault, every cloud LLM call shows a redaction receipt, and identity is something the user teaches Hark — never something Hark guesses without consent.</p>
+<h2 id="about-the-design-files">About the Design Files</h2>
+<p>The files in this bundle are <strong>design references created as a single self-contained HTML/React prototype</strong> — a pan/zoom design canvas hosting 9 sections of artboards. They show intended look, layout, copy, and interaction behavior. <strong>They are not production code to copy directly.</strong></p>
+<p>The task is to <strong>recreate these designs in the target codebase&#39;s environment</strong> — per the existing Hark docs in <code>hark/docs/</code>, that is an Electron renderer (React) over a Swift sidecar engine, with state pushed via the WebSocket contract in <code>08-websocket-api-contract.md</code>. Use whatever component library, styling system, and IPC plumbing the real codebase already has — these mocks are only the <em>visual contract</em>.</p>
+<p>Speaker tagging especially has live, interactive logic in the HTML (audio playhead animation, name field, confirm/correct state machine). That logic is illustrative of the user-facing state model; the real implementation must hook the audio buttons to the engine and call <code>speaker.tag</code> over WebSocket as documented in the existing API contract.</p>
+<h2 id="fidelity">Fidelity</h2>
+<p><strong>High-fidelity.</strong> Pixel-perfect mockups: exact hex colors via CSS custom properties, exact font sizes, exact spacing, real component states (hover / active / disabled), real interactions (the speaker-tagging modal genuinely plays animated waveforms and accepts text input).</p>
+<p>The developer should recreate this pixel-perfectly. Tokens are in <code>styles/tokens.css</code>; lift those values straight into the codebase&#39;s theme file.</p>
+<h2 id="files-in-this-bundle">Files in This Bundle</h2>
+<pre><code>Hark - Design Canvas<span class="hljs-selector-class">.html</span>       Top-level <span class="hljs-selector-tag">canvas</span> + Tweaks wiring + cover card
+design-<span class="hljs-selector-tag">canvas</span><span class="hljs-selector-class">.jsx</span>               Canvas runtime (pan/<span class="hljs-attribute">zoom</span>, fullscreen focus)
+tweaks-panel<span class="hljs-selector-class">.jsx</span>                In-prototype tweaks UI runtime
+styles/tokens<span class="hljs-selector-class">.css</span>               ALL design tokens — colors, spacing, type, components
+components/shared<span class="hljs-selector-class">.jsx</span>           Icon set, MacWindow chrome, TranscriptLine,
+                                TermCard, BookmarkHover, AudioMeter, SpeakerTag,
+                                CitationChip, StatusBanner, Toggle, Eyebrow,
+                                SPEAKER_COLORS palette, SAMPLE_TRANSCRIPT data
+artboards/MainWindow<span class="hljs-selector-class">.jsx</span>        Section <span class="hljs-number">1</span>: live transcript <span class="hljs-selector-tag">main</span> window
+artboards/TrayMenu<span class="hljs-selector-class">.jsx</span>          Section <span class="hljs-number">2</span>: menubar popover (<span class="hljs-number">3</span> states)
+artboards/PostMeetingReview<span class="hljs-selector-class">.jsx</span> Section <span class="hljs-number">3</span>: tabbed post-meeting review
+artboards/QAPanel<span class="hljs-selector-class">.jsx</span>           Section <span class="hljs-number">4</span>: streaming Q&amp;A side panel
+artboards/SettingsPrivacy<span class="hljs-selector-class">.jsx</span>   Section <span class="hljs-number">5</span>: privacy settings + redaction log
+artboards/Onboarding<span class="hljs-selector-class">.jsx</span>        Section <span class="hljs-number">6</span>: <span class="hljs-number">3</span> onboarding screens
+artboards/DocsSite<span class="hljs-selector-class">.jsx</span>          Section <span class="hljs-number">7</span>: static docs site landing + <span class="hljs-attribute">page</span>
+artboards/ComponentSheet<span class="hljs-selector-class">.jsx</span>    Section <span class="hljs-number">8</span>: every atom + molecule used
+artboards/SpeakerTagging<span class="hljs-selector-class">.jsx</span>    Section <span class="hljs-number">9</span>: INTERACTIVE tagging modal +
+                                auto-recognition state machine (latest work)
+screenshots<span class="hljs-comment">/*.png               Reference renders of each artboard variant</span>
+</code></pre>
+<p>To preview the design as the user sees it: open <code>Hark - Design Canvas.html</code> in any modern browser. Use the in-page Tweaks panel to flip accent, font, density, <strong>speaker label style</strong> (smallcaps / pill / name), and translation visibility.</p>
+<h3 id="screenshot-index">Screenshot Index</h3>
+<p>Reference renders are in <code>screenshots/</code>, scaled to fit a fixed viewport so each entire artboard is visible. For full-fidelity inspection, open the HTML canvas in a browser and click any artboard to focus it.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Source</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>01-mw-dark.png</code></td>
+<td>MainWindow · dark default</td>
+<td>live transcript, term card hover, Q&amp;A preview</td>
+</tr>
+<tr>
+<td><code>02-mw-light.png</code></td>
+<td>MainWindow · light default</td>
+<td>same in light theme</td>
+</tr>
+<tr>
+<td><code>03-mw-compact.png</code></td>
+<td>MainWindow · compact transcript variant</td>
+<td>denser transcript spacing</td>
+</tr>
+<tr>
+<td><code>04-tray-rec.png</code></td>
+<td>TrayMenu · dark · recording</td>
+<td>active capture state</td>
+</tr>
+<tr>
+<td><code>05-tray-idle.png</code></td>
+<td>TrayMenu · dark · idle</td>
+<td>between meetings</td>
+</tr>
+<tr>
+<td><code>06-tray-paused.png</code></td>
+<td>TrayMenu · light · paused</td>
+<td>mid-meeting pause</td>
+</tr>
+<tr>
+<td><code>07-rev-dark.png</code></td>
+<td>PostMeetingReview · dark</td>
+<td>full tab UI, unlabeled-speaker resolve</td>
+</tr>
+<tr>
+<td><code>08-rev-light.png</code></td>
+<td>PostMeetingReview · light</td>
+<td>same in light</td>
+</tr>
+<tr>
+<td><code>09-qa-dark.png</code></td>
+<td>QAPanel · dark</td>
+<td>streaming answer + citations</td>
+</tr>
+<tr>
+<td><code>10-qa-light.png</code></td>
+<td>QAPanel · light</td>
+<td>same in light</td>
+</tr>
+<tr>
+<td><code>11-set-dark.png</code></td>
+<td>SettingsPrivacy · dark</td>
+<td>redaction log + cloud spend</td>
+</tr>
+<tr>
+<td><code>12-set-light.png</code></td>
+<td>SettingsPrivacy · light</td>
+<td>same in light</td>
+</tr>
+<tr>
+<td><code>13-ob-1-trust.png</code></td>
+<td>Onboarding · trust promise</td>
+<td>screen 1 of 3</td>
+</tr>
+<tr>
+<td><code>14-ob-2-permissions.png</code></td>
+<td>Onboarding · permissions</td>
+<td>screen 2 of 3</td>
+</tr>
+<tr>
+<td><code>15-ob-3-setup.png</code></td>
+<td>Onboarding · vault &amp; API key</td>
+<td>screen 3 of 3</td>
+</tr>
+<tr>
+<td><code>16-ob-1-trust-light.png</code></td>
+<td>Onboarding · trust · light</td>
+<td>light theme variant</td>
+</tr>
+<tr>
+<td><code>17-docs-landing.png</code></td>
+<td>DocsSite · landing</td>
+<td>docs hub</td>
+</tr>
+<tr>
+<td><code>18-docs-page.png</code></td>
+<td>DocsSite · doc page</td>
+<td>interior doc template</td>
+</tr>
+<tr>
+<td><code>19-docs-landing-light.png</code></td>
+<td>DocsSite · landing · light</td>
+<td>light variant</td>
+</tr>
+<tr>
+<td><code>20-comp-dark.png</code></td>
+<td>ComponentSheet · dark</td>
+<td>full atom catalog</td>
+</tr>
+<tr>
+<td><code>21-comp-light.png</code></td>
+<td>ComponentSheet · light</td>
+<td>same in light</td>
+</tr>
+<tr>
+<td><strong><code>22-st-tagging-modal.png</code></strong></td>
+<td><strong>SpeakerTagging · tagging modal</strong></td>
+<td>the audio-snippet + name flow</td>
+</tr>
+<tr>
+<td><strong><code>23-st-auto-recognition.png</code></strong></td>
+<td><strong>SpeakerTagging · auto-recognition</strong></td>
+<td>confirm/correct Alice? chip</td>
+</tr>
+<tr>
+<td><code>24-st-tagging-modal-light.png</code></td>
+<td>SpeakerTagging · light</td>
+<td>tagging modal light variant</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="design-system">Design System</h2>
+<h3 id="color-tokens--dark-theme-default">Color Tokens — Dark Theme (default)</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--bg</code></td>
+<td><code>#0e1116</code></td>
+<td>Page background</td>
+</tr>
+<tr>
+<td><code>--bg-2</code></td>
+<td><code>#161a21</code></td>
+<td>Sidebar / sub-surface background</td>
+</tr>
+<tr>
+<td><code>--surface</code></td>
+<td><code>#1a1f27</code></td>
+<td>Cards, modals, inputs</td>
+</tr>
+<tr>
+<td><code>--surface-2</code></td>
+<td><code>#20262f</code></td>
+<td>Elevated surface (popover)</td>
+</tr>
+<tr>
+<td><code>--border</code></td>
+<td><code>#262c36</code></td>
+<td>Subtle dividers</td>
+</tr>
+<tr>
+<td><code>--border-2</code></td>
+<td><code>#323a47</code></td>
+<td>Card / input borders</td>
+</tr>
+<tr>
+<td><code>--text</code></td>
+<td><code>#e8eaed</code></td>
+<td>Primary text</td>
+</tr>
+<tr>
+<td><code>--text-2</code></td>
+<td><code>#9aa3b2</code></td>
+<td>Secondary text</td>
+</tr>
+<tr>
+<td><code>--text-3</code></td>
+<td><code>#6a7280</code></td>
+<td>Tertiary / metadata</td>
+</tr>
+<tr>
+<td><code>--accent</code></td>
+<td><code>#7aa9d6</code></td>
+<td>Brand accent (muted blue)</td>
+</tr>
+<tr>
+<td><code>--accent-2</code></td>
+<td><code>#5eb3c8</code></td>
+<td>Secondary accent (teal)</td>
+</tr>
+<tr>
+<td><code>--accent-soft</code></td>
+<td><code>rgba(122,169,214,0.14)</code></td>
+<td>Accent surface tint</td>
+</tr>
+<tr>
+<td><code>--selection</code></td>
+<td><code>rgba(122,169,214,0.22)</code></td>
+<td>Text selection</td>
+</tr>
+<tr>
+<td><code>--highlight</code></td>
+<td><code>rgba(255,255,255,0.03)</code></td>
+<td>Hover overlay</td>
+</tr>
+</tbody></table>
+<h3 id="color-tokens--light-theme">Color Tokens — Light Theme</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--bg</code></td>
+<td><code>#fafaf7</code></td>
+</tr>
+<tr>
+<td><code>--bg-2</code></td>
+<td><code>#f2f2ed</code></td>
+</tr>
+<tr>
+<td><code>--surface</code></td>
+<td><code>#ffffff</code></td>
+</tr>
+<tr>
+<td><code>--surface-2</code></td>
+<td><code>#f6f6f1</code></td>
+</tr>
+<tr>
+<td><code>--border</code></td>
+<td><code>#e3e2db</code></td>
+</tr>
+<tr>
+<td><code>--border-2</code></td>
+<td><code>#d2d1c9</code></td>
+</tr>
+<tr>
+<td><code>--text</code></td>
+<td><code>#1d2128</code></td>
+</tr>
+<tr>
+<td><code>--text-2</code></td>
+<td><code>#5b6472</code></td>
+</tr>
+<tr>
+<td><code>--text-3</code></td>
+<td><code>#8a8f97</code></td>
+</tr>
+<tr>
+<td><code>--accent</code></td>
+<td><code>#4a85b9</code></td>
+</tr>
+<tr>
+<td><code>--accent-2</code></td>
+<td><code>#3f95ad</code></td>
+</tr>
+<tr>
+<td><code>--accent-soft</code></td>
+<td><code>rgba(74,133,185,0.10)</code></td>
+</tr>
+</tbody></table>
+<h3 id="status-colors-shared-across-themes">Status Colors (shared across themes)</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--status-recording</code></td>
+<td><code>#e35d6a</code></td>
+<td>Red dot, REC indicator</td>
+</tr>
+<tr>
+<td><code>--status-warning</code></td>
+<td><code>#d4a657</code></td>
+<td>Unlabeled, ambiguous, rate-limit</td>
+</tr>
+<tr>
+<td><code>--status-success</code></td>
+<td><code>#7ec089</code></td>
+<td>Confirmed, saved, healthy</td>
+</tr>
+<tr>
+<td><code>--status-cloud</code></td>
+<td><code>#7aa9d6</code></td>
+<td>&quot;Used cloud API&quot; affordance</td>
+</tr>
+</tbody></table>
+<h3 id="speaker-palette--6-muted-colors">Speaker Palette — 6 muted colors</h3>
+<p>These are the per-speaker chip/name colors. <strong>Never use saturated colors here.</strong> Shared across themes.</p>
+<pre><code class="language-js"><span class="hljs-variable constant_">SPEAKER_COLORS</span> = [
+  <span class="hljs-string">&quot;#d8a3ad&quot;</span>, <span class="hljs-comment">// warm pink</span>
+  <span class="hljs-string">&quot;#a8bf9a&quot;</span>, <span class="hljs-comment">// sage</span>
+  <span class="hljs-string">&quot;#d4a07a&quot;</span>, <span class="hljs-comment">// dusty terracotta</span>
+  <span class="hljs-string">&quot;#b4a3cf&quot;</span>, <span class="hljs-comment">// lavender</span>
+  <span class="hljs-string">&quot;#d8c98a&quot;</span>, <span class="hljs-comment">// sandy yellow</span>
+  <span class="hljs-string">&quot;#9aacbf&quot;</span>, <span class="hljs-comment">// soft slate</span>
+];
+</code></pre>
+<h3 id="typography">Typography</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Stack</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--font-ui</code></td>
+<td><code>-apple-system, BlinkMacSystemFont, &quot;SF Pro Text&quot;, &quot;Inter&quot;, system-ui, sans-serif</code></td>
+</tr>
+<tr>
+<td><code>--font-display</code></td>
+<td><code>-apple-system, BlinkMacSystemFont, &quot;SF Pro Display&quot;, &quot;Inter&quot;, system-ui, sans-serif</code></td>
+</tr>
+<tr>
+<td><code>--font-mono</code></td>
+<td><code>ui-monospace, &quot;SF Mono&quot;, &quot;JetBrains Mono&quot;, Menlo, monospace</code></td>
+</tr>
+</tbody></table>
+<p>Type scale (the actual sizes used across the canvas):</p>
+<table>
+<thead>
+<tr>
+<th>Use</th>
+<th>Size</th>
+<th>Weight</th>
+<th>Letter-spacing</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Window title / display</td>
+<td>18–28 px</td>
+<td>600</td>
+<td>-0.015em to -0.025em</td>
+</tr>
+<tr>
+<td>Body / transcript text</td>
+<td>14–15 px</td>
+<td>400</td>
+<td>normal</td>
+</tr>
+<tr>
+<td>UI label</td>
+<td>13 px</td>
+<td>500</td>
+<td>normal</td>
+</tr>
+<tr>
+<td>Speaker label (smallcaps)</td>
+<td>11 px</td>
+<td>600</td>
+<td>0.09em + UPPERCASE</td>
+</tr>
+<tr>
+<td>Speaker label (pill, name)</td>
+<td>11–12 px</td>
+<td>600</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Metadata / mono</td>
+<td>11 px</td>
+<td>400</td>
+<td>normal, monospace</td>
+</tr>
+<tr>
+<td>Eyebrow / section header</td>
+<td>10 px</td>
+<td>600</td>
+<td>0.08em + UPPERCASE, mono</td>
+</tr>
+</tbody></table>
+<h3 id="spacing--radii">Spacing &amp; Radii</h3>
+<p>Spacing scale: 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 36, 40, 48 px. No formal token, but spacing inside artboards is always one of those values (read off the source).</p>
+<p>Radii:</p>
+<ul>
+<li><code>--r-input</code> 6px</li>
+<li><code>--r-card</code> 8–10px</li>
+<li><code>--r-panel</code> 10–12px</li>
+<li><code>--r-window</code> 12px</li>
+<li>Pills / chips: 999px</li>
+</ul>
+<p>Shadow: <code>--shadow-modal: 0 24px 60px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.3)</code> (dark) / <code>0 16px 48px rgba(20,24,30,0.18), 0 2px 6px rgba(20,24,30,0.08)</code> (light).</p>
+<h3 id="components-atoms">Components (atoms)</h3>
+<p>See <code>components/shared.jsx</code> for all of these, and <code>artboards/ComponentSheet.jsx</code> for a visual catalog.</p>
+<ul>
+<li><strong>Icon</strong> — 24×24 viewBox stroke-only SVG, <code>currentColor</code>, 1.6px stroke. Filled glyphs: <code>bookmark</code>, <code>play</code>, <code>pause</code>, <code>stop</code>, <code>pin</code>. Available names: see the <code>paths</code> object at top of <code>shared.jsx</code>.</li>
+<li><strong>MacWindow</strong> — traffic-light titlebar, rounded 12px, title centered, accessory slot on right.</li>
+<li><strong>TranscriptLine</strong> — speaker chip + name + timestamp + body text; supports <code>[[wikilink]]</code> inline syntax, optional translation line, optional pinned indicator, optional citation superscript, <code>variant=&quot;compact&quot;</code> flag.</li>
+<li><strong>SpeakerTag</strong> — pill with chip + name + chevron-down (rename affordance).</li>
+<li><strong>TermCard</strong> — floating preview for <code>[[wikilinks]]</code>, 320px wide, vault path mono.</li>
+<li><strong>BookmarkHover</strong> — floating popover when hovering a bookmarked transcript moment.</li>
+<li><strong>AudioMeter</strong> — animated CSS-keyframe bars for live capture.</li>
+<li><strong>StatusBanner</strong> — tone-tinted strip (warning / success / cloud / neutral) with optional icon and action button.</li>
+<li><strong>Toggle</strong> — pill switch.</li>
+<li><strong>CitationChip</strong> — accent-soft pill with number + label.</li>
+<li><strong>Eyebrow</strong> — small uppercase section header, mono.</li>
+</ul>
+<hr>
+<h2 id="screens--views">Screens / Views</h2>
+<h3 id="1-·-main-window--live-transcript">1 · Main Window — Live Transcript</h3>
+<p><strong>File:</strong> <code>artboards/MainWindow.jsx</code> — three variants: dark default, light default, dark compact transcript.</p>
+<p><strong>Purpose:</strong> Centerpiece of the app while a meeting is being captured.</p>
+<p><strong>Layout:</strong> macOS window, 1100×700.</p>
+<ul>
+<li><strong>Top bar</strong> (<code>8px 16px</code> padding, <code>--bg</code>): REC indicator (red pulsing dot + <code>--status-recording</code> mm:ss counter, mono) · <code>&lt;AudioMeter&gt;</code> · vertical separator · <code>[⏸ Pause]</code> button · <code>[🔖 Bookmark ⌘⇧B]</code> button · spacer · <code>cloudOff · audio · local-only</code> lozenge · settings cog.</li>
+<li><strong>Status banner</strong> under top bar: tone=&quot;warning&quot; alerting that translation fell back to the local model. Includes a <code>[Review]</code> button.</li>
+<li><strong>3-column body</strong> (<code>grid-template-columns: 240px 1fr 320px</code>):<ul>
+<li><strong>Left (Attendees)</strong> — <code>--bg-2</code> background, scrollable list of speakers. Each row: chip dot + name (italic-grey if unlabeled) + meta line. Unlabeled rows get a <code>--status-warning</code> 8%-tint background + dashed warning border + <code>[Who is this?]</code> secondary button. Footer line: <code>diarization · FluidAudio · ● 0.94</code> (mono).</li>
+<li><strong>Center (Transcript)</strong> — header strip with <code>Eyebrow: Live transcript · auto-scroll</code>, language pill <code>VI → EN</code>. Scrollable feed of <code>&lt;TranscriptLine&gt;</code> items. Live partial at bottom = current speaker chip + italic gray text + blinking caret. A floating <code>&lt;TermCard&gt;</code> is shown anchored to a <code>[[Tessera deal]]</code> wikilink to demonstrate hover behavior.</li>
+<li><strong>Right (Q&amp;A preview)</strong> — <code>--bg-2</code>. Search field showing the recent question. <code>Eyebrow: Answer · streaming</code>. Body text with inline <code>[1]</code> <code>[2]</code> superscript citations. Sources list (numbered chips → title → snippet). Footer dashed <code>--status-cloud</code>-tinted note: &quot;Q&amp;A used Claude API · PII redacted (3 names, 1 dollar amount)&quot;.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Footer:</strong> <code>1,284 words · 14m 27s · 3 bookmarks · 2 vault links</code> · spacer · <code>● WhisperKit · large-v3-turbo · RTF 0.18</code>.</p>
+<p><strong>States:</strong> <code>theme=&quot;dark&quot;|&quot;light&quot;</code>, <code>variant=&quot;default&quot;|&quot;compact&quot;</code>. Compact tightens the transcript line padding and shrinks body to 14px.</p>
+<hr>
+<h3 id="2-·-tray-menu--menubar-popover">2 · Tray Menu — Menubar Popover</h3>
+<p><strong>File:</strong> <code>artboards/TrayMenu.jsx</code>.</p>
+<p>280px wide. Three states displayed side-by-side:</p>
+<ul>
+<li><strong>Recording (dark)</strong> — REC indicator, current meeting title, live duration, audio meter, [Pause] [Stop] [Bookmark] [Open] actions, current speaker badge.</li>
+<li><strong>Idle (dark)</strong> — recent meetings list, [New recording] primary action.</li>
+<li><strong>Paused (light)</strong> — paused indicator, [Resume] [Stop] [Bookmark] actions, gentle ambient gradient.</li>
+</ul>
+<hr>
+<h3 id="3-·-post-meeting-review">3 · Post-Meeting Review</h3>
+<p><strong>File:</strong> <code>artboards/PostMeetingReview.jsx</code>. 1100×780.</p>
+<p>macOS window. Header: 40×40 waveform tile + meeting title + meta line (<code>Fri 24 May · 14:00–14:38 · 4 speakers · 3 bookmarks · vault://meetings/2026-05-24-tessera.md</code>). Right side: <code>[📁 Open in Obsidian]</code> secondary + <code>[✓ Confirm &amp; file]</code> primary.</p>
+<p><strong>Tabs:</strong> Summary · Action items (5) · Decisions (3) · Open questions (2) · Full transcript · Speakers (4). Selected tab has <code>--accent</code> bottom border + count chip in <code>--accent-soft</code>.</p>
+<p><strong>Body grid:</strong> <code>1fr 320px</code>.</p>
+<ul>
+<li><strong>Main pane:</strong> TL;DR paragraph · Chapters list (4 numbered rows, currently-highlighted one in <code>--accent-soft</code>) · Action items table (checkboxes + assignees + due dates) · Decisions list (ul).</li>
+<li><strong>Side pane (<code>--bg-2</code>):</strong> &quot;Summary generated with&quot; panel — <code>--status-cloud</code> dashed tint, shows <code>Claude API · sonnet</code>, redaction count, &quot;View redaction log →&quot; link, footer with token counts + cost in mono. Below: Speakers list with 3 tagged + 1 inline <code>[Unlabeled — Speaker 4]</code> resolve block (mini waveform play button + &quot;Who is this?&quot; input + privacy footer line). Vault path card at bottom showing git status + backlinks.</li>
+</ul>
+<hr>
+<h3 id="4-·-qa-panel">4 · Q&amp;A Panel</h3>
+<p><strong>File:</strong> <code>artboards/QAPanel.jsx</code>. 380×700 detail view of the right-rail Q&amp;A from MainWindow. Streaming answer with cursor caret, numbered sources with snippets, dashed <code>--status-cloud</code> privacy footer.</p>
+<hr>
+<h3 id="5-·-settings-→-privacy">5 · Settings → Privacy</h3>
+<p><strong>File:</strong> <code>artboards/SettingsPrivacy.jsx</code>. 1100×720.</p>
+<p>The trust receipt: full settings frame with left nav (Recording, Vault, Privacy active, AI, Permissions, About). Privacy pane shows:</p>
+<ul>
+<li><strong>Redact before cloud</strong> master toggle + per-category sub-toggles (names, dollar figures, phone numbers, sub-IDs).</li>
+<li><strong>Voiceprint storage</strong> — vault path, &quot;Open folder&quot; action, count of stored speakers.</li>
+<li><strong>Cloud calls log</strong> — table: date · purpose · model · tokens · redactions applied · cost.</li>
+<li><strong>Monthly spend</strong> — running total + soft cap setting.</li>
+<li><strong>Permissions audit</strong> — microphone, screen recording, accessibility, with grant date.</li>
+</ul>
+<hr>
+<h3 id="6-·-onboarding">6 · Onboarding</h3>
+<p><strong>File:</strong> <code>artboards/Onboarding.jsx</code>. 720×520 each.</p>
+<p>Four screens:</p>
+<ol>
+<li><strong>Trust promise</strong> — large display heading; &quot;Audio never leaves this Mac. Voiceprints stay in your vault. Every cloud call shows a redaction receipt.&quot; Below: 3 promises with icons.</li>
+<li><strong>Permissions</strong> — Microphone, Screen Recording, Accessibility. Each row explains what it does, why, and when Hark uses it.</li>
+<li><strong>Vault &amp; API key</strong> — vault folder picker (defaults to <code>~/Hark</code>), optional Claude API key (with note: &quot;skip → local model only, summaries quality lower&quot;).</li>
+<li>(Light theme variant of screen 1.)</li>
+</ol>
+<hr>
+<h3 id="7-·-docs-site">7 · Docs Site</h3>
+<p><strong>File:</strong> <code>artboards/DocsSite.jsx</code>. 1280×900.</p>
+<p>Static site for the <code>vault/hark/docs</code> folder. Landing page (hero + nav grid into the 4 doc categories) and an interior doc page template (left ToC, content column, right &quot;On this page&quot; anchor list). Dark + light landing variants.</p>
+<hr>
+<h3 id="8-·-component-sheet">8 · Component Sheet</h3>
+<p><strong>File:</strong> <code>artboards/ComponentSheet.jsx</code>. 1100×2050.</p>
+<p>Visual catalog of every atom + molecule. Use this as the reference when implementing components in the real codebase.</p>
+<hr>
+<h3 id="9-·-speaker-tagging--interactive-⭐-latest-work">9 · Speaker Tagging — Interactive ⭐ (latest work)</h3>
+<p><strong>File:</strong> <code>artboards/SpeakerTagging.jsx</code>. Three artboards. This is the most logic-heavy and corresponds to the <code>speaker.tag</code> and ambiguous-match flows in the WebSocket spec.</p>
+<h4 id="9a-·-tagging-modal-speakertaggingmodal--860×620">9a · Tagging Modal (<code>SpeakerTaggingModal</code>) — 860×620</h4>
+<p><strong>Trigger:</strong> user clicks <code>[Who is this?]</code> on an unlabeled row.</p>
+<p><strong>Layout:</strong> centered modal card (640px wide) over dimmed/blurred meeting window context.</p>
+<p><strong>Card header:</strong> <code>--surface</code> background, chip dot in <code>SPEAKER_COLORS[3]</code> + heading &quot;Who is <strong>Speaker 4</strong>?&quot; (the &quot;Speaker 4&quot; colored) + meta &quot;5m 08s spoken · 3 segments · clustered by voice only&quot; + close [×].</p>
+<p><strong>Body — Listen section:</strong> <code>Eyebrow: Listen · 3 representative snippets</code>. Three <code>&lt;PlayableSnippet&gt;</code> components, each:</p>
+<ul>
+<li>26px round play button in speaker color</li>
+<li>Animated waveform of vertical bars (heights deterministic, defined as <code>WF_A</code>, <code>WF_B</code>, <code>WF_C</code> arrays in the file)</li>
+<li>Bars left-of-playhead colored in speaker accent; bars right-of-playhead in <code>--text-3</code> 55%</li>
+<li>2px playhead line driven by <code>requestAnimationFrame</code>, mm:ss counter on right</li>
+<li>Click to play/pause; auto-stops at duration end</li>
+<li>Footer line (mono, --text-3, 10.5px): &quot;audio stays on this Mac · samples taken from §4.2 chapter&quot;</li>
+</ul>
+<p><strong>Suggestions section:</strong> <code>Eyebrow: Hark thinks it might be one of these · sub-threshold matches</code>. Three pill buttons, each: user icon + name + similarity %. Pills are sub-threshold matches from the user&#39;s <code>vault/.speakers/</code>. Clicking a pill auto-fills the name field.</p>
+<p>Currently shown: &quot;Linh Nguyễn 62%&quot;, &quot;Bao Trần 51%&quot;, &quot;Mai Phạm 44%&quot; — <strong>replace these with real engine outputs</strong>. Pills below threshold (<code>&lt; 0.65</code> per the docs) get suggested here. Selected state: <code>--accent</code> border, <code>--accent-soft</code> fill, accent text.</p>
+<p><strong>Name input:</strong> standard <code>&lt;input class=&quot;input&quot;&gt;</code> with placeholder. Clear-button [×] appears when text present. Autofocus.</p>
+<p><strong>Privacy receipt card</strong> (<code>--bg-2</code>, <code>--border</code>, 8px radius):</p>
+<ul>
+<li>Row 1: shield icon (<code>--status-success</code>) + &quot;Voiceprint will save to <code>vault/.speakers/&lt;slug&gt;.json</code>&quot; — slug updates live as user types.</li>
+<li>Row 2: cloudOff icon + &quot;Embedding (~3KB) never leaves this Mac. Used only to recognize this voice in future meetings.&quot;</li>
+<li>Row 3: read-only mirror of the global PII-redaction setting, with a &quot;Settings →&quot; link. <strong>Per the resolved open question, this is NOT a per-speaker override</strong> — the privacy story is &quot;one global toggle, no exceptions&quot; so users never have to remember per-speaker state.</li>
+</ul>
+<p><strong>Footer bar</strong> (<code>--bg-2</code>, dividers):</p>
+<ul>
+<li>Left: keyboard hints <code>⏎ to save · esc to cancel</code> (mono, --text-3, 11.5px).</li>
+<li>Right: <code>[Cancel]</code> secondary + <code>[Save &amp; remember voice]</code> primary. Primary disabled until name ≥ 2 chars.</li>
+<li>On save: transitions to &quot;Saved&quot; state showing a check, button locks. Toast slides up from bottom: &quot;Speaker 4 → <strong>Linh Nguyễn</strong>&quot; + meta &quot;3 segments renamed · voiceprint saved · git committed&quot; + <code>[undo]</code> button.</li>
+</ul>
+<p><strong>WebSocket integration:</strong> on save, fire <code>{type: &quot;speaker.tag&quot;, payload: {meeting_id, speaker_label: &quot;Speaker 4&quot;, name: &quot;Linh Nguyễn&quot;}}</code> per <code>08-websocket-api-contract.md</code>. Engine response writes the JSON file, retroactively renames segments, git commits.</p>
+<h4 id="9b-·-auto-recognition-states-speakerautorecognition--720×620">9b · Auto-Recognition States (<code>SpeakerAutoRecognition</code>) — 720×620</h4>
+<p>Header: &quot;Attendees · 4 · New meeting · Hark cross-checked your vault voiceprints&quot; + <code>[← reset demo]</code> ghost button.</p>
+<p><strong>Three speaker rows, each in a distinct state:</strong></p>
+<p><strong>Row 1 — High-confidence auto-resolved:</strong></p>
+<ul>
+<li>&quot;Ahmed K.&quot; with <code>auto · 94%</code> success-tinted badge</li>
+<li>Background: <code>--status-success</code> 7% tint, success-tinted border</li>
+<li>Meta: &quot;Auto-matched · 94% · Counsel&quot;</li>
+<li>Right action: <code>[Not Ahmed?]</code> ghost button → clicking demotes to unknown (&quot;Match undone — please re-tag manually&quot;) + <code>[Re-apply]</code> button.</li>
+</ul>
+<p><strong>Row 2 — Ambiguous &quot;Alice?&quot; chip</strong> (the spec&#39;s <code>Speaker N (Alice?)</code>):</p>
+<ul>
+<li>Name: &quot;Speaker 1&quot; (grey) + &quot;(Alice?)&quot; (in Alice&#39;s speaker color)</li>
+<li>Background: <code>--status-warning</code> 8% tint, dashed warning border</li>
+<li>Badge: <code>needs your confirm</code> warning chip</li>
+<li>Meta: &quot;Possible match — 78% confidence · last seen Mar 14&quot;</li>
+<li>Embedded playable snippet of Alice&#39;s voice (so user can listen before confirming)</li>
+<li>Right actions: <code>[✓ Yes]</code> primary + <code>[✗ No]</code> secondary</li>
+<li>On Yes → row becomes &quot;Alice Chen&quot;, success badge, meta &quot;Voiceprint reinforced · 4 meetings together&quot;</li>
+<li>On No → row reverts to &quot;Speaker 1&quot;, neutral border, meta &quot;Match rejected — Hark won&#39;t suggest Alice for this voice again&quot;, <code>[undo]</code> ghost button to restore.</li>
+</ul>
+<p><strong>Row 3 — Fully unknown:</strong></p>
+<ul>
+<li>&quot;Speaker 4&quot; with playable snippet, meta &quot;Unknown voice · not in your vault&quot;</li>
+<li>Right action: <code>[Who is this?]</code> secondary button</li>
+<li>On click → row expands to show an inline name input + <code>[✓ Save]</code> primary. Save button disabled until name ≥ 2 chars.</li>
+<li>On save → row becomes labeled, success badge, meta &quot;New voiceprint saved · will auto-match next time&quot;.</li>
+</ul>
+<p><strong>Footer info card</strong> (dashed <code>--border</code>, <code>--bg-2</code>): documents the threshold model:</p>
+<blockquote>
+<p>Voiceprints from past meetings live in <code>vault/.speakers/</code>. Cosine similarity ≥ 0.85 auto-matches; 0.65–0.85 surfaces as an <em>(Alice?)</em> chip; below 0.65 stays unlabeled. Adjust thresholds in Settings → Speakers.</p>
+</blockquote>
+<h4 id="9c-·-tagging-modal--light-theme">9c · Tagging Modal — Light theme</h4>
+<p>Same as 9a but with <code>theme=&quot;light&quot;</code>.</p>
+<hr>
+<h2 id="interactions--behavior">Interactions &amp; Behavior</h2>
+<h3 id="speaker-tagging-modal-9a">Speaker Tagging Modal (9a)</h3>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Click play button on snippet</td>
+<td>Animation starts via <code>requestAnimationFrame</code>. Bars left-of-playhead fill with speaker color. Playhead advances. mm:ss counter increments. Auto-pauses at duration end.</td>
+</tr>
+<tr>
+<td>Click pause</td>
+<td>Animation halts at current position.</td>
+</tr>
+<tr>
+<td>Click again after end</td>
+<td>Resets to 0 and plays from start.</td>
+</tr>
+<tr>
+<td>Click a suggestion pill</td>
+<td>Name field fills. Pill shows selected state (<code>--accent</code> border + <code>--accent-soft</code> background).</td>
+</tr>
+<tr>
+<td>Type in name field</td>
+<td>Vault path preview updates live (<code>vault/.speakers/&lt;slug&gt;.json</code>). Save button enables at length ≥ 2.</td>
+</tr>
+<tr>
+<td>Slugify rules</td>
+<td>Lowercase · NFD-strip diacritics · non-alphanumeric → <code>-</code> · trim leading/trailing hyphens.</td>
+</tr>
+<tr>
+<td>Toggle &quot;Redact this name before cloud&quot;</td>
+<td>Updates state; persists per-speaker as override on the global setting.</td>
+</tr>
+<tr>
+<td>Click Save</td>
+<td>Send WebSocket <code>speaker.tag</code>. Wait for ack. Show toast with undo (toast persists until dismissed). Lock modal in &quot;Saved&quot; state.</td>
+</tr>
+<tr>
+<td>Click Undo on toast</td>
+<td>Send compensating action; revert tag; reopen modal in editable state.</td>
+</tr>
+</tbody></table>
+<h3 id="auto-recognition-9b">Auto-Recognition (9b)</h3>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>State transition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>App starts new meeting</td>
+<td>Engine sends <code>meeting.saved</code> with <code>speakers[]</code> array including <code>matched_name</code> + <code>confidence</code>. UI renders rows.</td>
+</tr>
+<tr>
+<td><code>confidence ≥ 0.85</code></td>
+<td>Render with success badge + auto-matched meta. Provide [Not X?] escape hatch.</td>
+</tr>
+<tr>
+<td><code>0.65 ≤ confidence &lt; 0.85</code></td>
+<td>Render as <code>Speaker N (Name?)</code> ambiguous chip with warning border + [Yes][No] actions.</td>
+</tr>
+<tr>
+<td><code>confidence &lt; 0.65</code></td>
+<td>Render unlabeled, no suggestion, [Who is this?] button.</td>
+</tr>
+<tr>
+<td>User clicks Yes on ambiguous</td>
+<td>Confirm match, reinforce embedding (engine appends to existing voiceprint file).</td>
+</tr>
+<tr>
+<td>User clicks No</td>
+<td>Reject match. Add this segment&#39;s embedding to a &quot;negative&quot; list so Hark doesn&#39;t re-suggest this person for this voice.</td>
+</tr>
+<tr>
+<td>User clicks &quot;Not X?&quot; on auto-matched</td>
+<td>Demote to unknown. Embedding is <strong>not</strong> removed from the original speaker file (it was matched correctly in prior meetings); only this meeting&#39;s segments unlink.</td>
+</tr>
+</tbody></table>
+<h3 id="threshold-model-per-harkdocsdesign06-architecture-overviewmd-and-the-docs-the-user-already-has">Threshold Model (per <code>hark/docs/design/06-architecture-overview.md</code> and the docs the user already has)</h3>
+<p>The 0.85 / 0.65 thresholds are placeholders that need engine tuning. Surface both as user-adjustable in <strong>Settings → Speakers</strong> (a settings pane not yet drawn — see &quot;Open Design Decisions&quot; below).</p>
+<hr>
+<h2 id="state-management-renderer-side">State Management (Renderer Side)</h2>
+<p>For the speaker-tagging surfaces specifically:</p>
+<pre><code class="language-ts"><span class="hljs-keyword">type</span> <span class="hljs-title class_">SpeakerState</span> =
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;unknown&quot;</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;ambiguous&quot;</span>; <span class="hljs-attr">suggested</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">confidence</span>: <span class="hljs-built_in">number</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;auto-matched&quot;</span>; <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">confidence</span>: <span class="hljs-built_in">number</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;user-confirmed&quot;</span>; <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;user-rejected&quot;</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;tagging&quot;</span> }; <span class="hljs-comment">// local UI state during modal</span>
+
+<span class="hljs-keyword">type</span> <span class="hljs-title class_">Speaker</span> = {
+  <span class="hljs-attr">label</span>: <span class="hljs-built_in">string</span>;          <span class="hljs-comment">// &quot;Speaker 1&quot;</span>
+  <span class="hljs-attr">color</span>: <span class="hljs-built_in">string</span>;          <span class="hljs-comment">// SPEAKER_COLORS[i]</span>
+  <span class="hljs-attr">durationSeconds</span>: <span class="hljs-built_in">number</span>;
+  <span class="hljs-attr">segmentCount</span>: <span class="hljs-built_in">number</span>;
+  <span class="hljs-attr">sampleSnippets</span>: <span class="hljs-title class_">AudioSnippet</span>[];  <span class="hljs-comment">// engine-provided representative segments</span>
+  <span class="hljs-attr">state</span>: <span class="hljs-title class_">SpeakerState</span>;
+};
+</code></pre>
+<p>Modal-local state (inside <code>SpeakerTaggingModal</code>):</p>
+<ul>
+<li><code>name: string</code></li>
+<li><code>saved: boolean</code></li>
+<li><code>redactInCloud: boolean</code> (default = global setting)</li>
+</ul>
+<p>The HTML uses React <code>useState</code>. The real implementation should keep this in whatever store Hark already uses (the docs imply a per-meeting reducer; align with what&#39;s already there).</p>
+<hr>
+<h2 id="open-design-decisions--resolved-2026-05-24">Open Design Decisions — resolved 2026-05-24</h2>
+<ol>
+<li>✅ <strong>Sub-threshold suggestion pills.</strong> Cap at 3 pills, floor at 0.40. Below that is noise and erodes trust.</li>
+<li>✅ <strong>Per-speaker redact toggle in modal — DROPPED.</strong> Replaced with a read-only mirror of the global Privacy setting + <code>Settings →</code> link. Reason: one global toggle is simpler to reason about; per-speaker overrides complicate the privacy story (&quot;did I disable redaction for that person? can&#39;t remember&quot;).</li>
+<li>⏳ <strong>Settings → Speakers pane.</strong> Still to mock. Lives between &quot;AI&quot; and &quot;Permissions&quot; in the left nav. Surface: auto-match threshold slider, ambiguous-band floor slider, enrolled-speaker list with delete/merge.</li>
+<li>✅ <strong>Rejection effect on prior transcripts.</strong> Prior meetings stay labeled. Rejection only affects this meeting&#39;s segments and prevents future suggestion of this person for this <em>new</em> voice. Original speaker file untouched.</li>
+<li>⏳ <strong>Single-speaker collapse.</strong> When only 1 speaker is detected, collapse the 240px attendees sidebar to a slim 1-row indicator. Still to mock.</li>
+</ol>
+<hr>
+<h2 id="assets">Assets</h2>
+<p>No external image assets — everything is SVG (drawn inline in <code>components/shared.jsx</code> <code>Icon</code> component) or CSS. Fonts load from Google Fonts (<code>Inter</code>, <code>JetBrains Mono</code>) with <code>-apple-system</code> first in the stack.</p>
+<p>In the real codebase, prefer the OS-native fonts; the Google Font imports were used only to make the design canvas render outside macOS reliably.</p>
+<hr>
+<h2 id="how-to-implement-suggested-order">How to Implement (suggested order)</h2>
+<ol>
+<li><strong>Tokens first.</strong> Copy <code>styles/tokens.css</code> values into the codebase&#39;s theme module. Map dark/light to existing dark/light scheme.</li>
+<li><strong>Atoms.</strong> Build the components in <code>shared.jsx</code> (Icon, MacWindow chrome, TranscriptLine, etc.) — use the <code>ComponentSheet</code> artboard as a visual test.</li>
+<li><strong>Main window shell.</strong> Implement the 3-column layout + top bar + status banner.</li>
+<li><strong>Speaker tagging (the spec&#39;s HARK-B-2 + auto-recognition).</strong> Build the modal + the auto-recognition state machine — wire to existing <code>speaker.tag</code> WebSocket action.</li>
+<li><strong>Post-meeting review.</strong> Implement after streaming pipeline is in place.</li>
+<li><strong>Settings → Privacy + the unfinished Speakers sub-pane.</strong></li>
+<li><strong>Onboarding, Tray menu, Docs site, Q&amp;A panel</strong> can land in parallel.</li>
+</ol>
+<p>Reference <code>hark/docs/analysis/04-user-journeys.md</code> and <code>hark/docs/analysis/05-user-stories.md</code> for the user flows these screens implement; the user stories <code>HARK-B-1</code> and <code>HARK-B-2</code> map directly to section 9 of this design.</p>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#overview">Overview</a>
+<a class="toc-l2" href="#about-the-design-files">About the Design Files</a>
+<a class="toc-l2" href="#fidelity">Fidelity</a>
+<a class="toc-l2" href="#files-in-this-bundle">Files in This Bundle</a>
+<a class="toc-l3" href="#screenshot-index">Screenshot Index</a>
+<a class="toc-l2" href="#design-system">Design System</a>
+<a class="toc-l3" href="#color-tokens--dark-theme-default">Color Tokens — Dark Theme (default)</a>
+<a class="toc-l3" href="#color-tokens--light-theme">Color Tokens — Light Theme</a>
+<a class="toc-l3" href="#status-colors-shared-across-themes">Status Colors (shared across themes)</a>
+<a class="toc-l3" href="#speaker-palette--6-muted-colors">Speaker Palette — 6 muted colors</a>
+<a class="toc-l3" href="#typography">Typography</a>
+<a class="toc-l3" href="#spacing--radii">Spacing &amp;amp; Radii</a>
+<a class="toc-l3" href="#components-atoms">Components (atoms)</a>
+<a class="toc-l2" href="#screens--views">Screens / Views</a>
+<a class="toc-l3" href="#1-·-main-window--live-transcript">1 · Main Window — Live Transcript</a>
+<a class="toc-l3" href="#2-·-tray-menu--menubar-popover">2 · Tray Menu — Menubar Popover</a>
+<a class="toc-l3" href="#3-·-post-meeting-review">3 · Post-Meeting Review</a>
+<a class="toc-l3" href="#4-·-qa-panel">4 · Q&amp;amp;A Panel</a>
+<a class="toc-l3" href="#5-·-settings-→-privacy">5 · Settings → Privacy</a>
+<a class="toc-l3" href="#6-·-onboarding">6 · Onboarding</a>
+<a class="toc-l3" href="#7-·-docs-site">7 · Docs Site</a>
+<a class="toc-l3" href="#8-·-component-sheet">8 · Component Sheet</a>
+<a class="toc-l3" href="#9-·-speaker-tagging--interactive-⭐-latest-work">9 · Speaker Tagging — Interactive ⭐ (latest work)</a>
+<a class="toc-l2" href="#interactions--behavior">Interactions &amp;amp; Behavior</a>
+<a class="toc-l3" href="#speaker-tagging-modal-9a">Speaker Tagging Modal (9a)</a>
+<a class="toc-l3" href="#auto-recognition-9b">Auto-Recognition (9b)</a>
+<a class="toc-l3" href="#threshold-model-per-harkdocsdesign06-architecture-overviewmd-and-the-docs-the-user-already-has">Threshold Model (per hark/docs/design/06-architecture-overview.md and the docs the user already has)</a>
+<a class="toc-l2" href="#state-management-renderer-side">State Management (Renderer Side)</a>
+<a class="toc-l2" href="#open-design-decisions--resolved-2026-05-24">Open Design Decisions — resolved 2026-05-24</a>
+<a class="toc-l2" href="#assets">Assets</a>
+<a class="toc-l2" href="#how-to-implement-suggested-order">How to Implement (suggested order)</a></nav>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Overview · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a class="active" href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Architecture Overview</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="architecture-overview">Architecture Overview</h1>
+<p>C4-style decomposition, top-down. Skip to the diagram if you just want the shape.</p>
+<h2 id="system-context">System context</h2>
+<pre><code class="language-mermaid">C4Context
+    title Hark — System Context
+
+    <span class="hljs-built_in">Person</span>(user, <span class="hljs-string">&quot;User&quot;</span>, <span class="hljs-string">&quot;Knowledge worker on macOS&quot;</span>)
+    <span class="hljs-built_in">System</span>(hark, <span class="hljs-string">&quot;Hark&quot;</span>, <span class="hljs-string">&quot;Local-first meeting transcription app&quot;</span>)
+    <span class="hljs-built_in">System_Ext</span>(claude, <span class="hljs-string">&quot;Claude API&quot;</span>, <span class="hljs-string">&quot;Anthropic — text-only, user-invoked&quot;</span>)
+    <span class="hljs-built_in">System_Ext</span>(vault, <span class="hljs-string">&quot;Vault folder&quot;</span>, <span class="hljs-string">&quot;User&#x27;s git-backed markdown notes&quot;</span>)
+    <span class="hljs-built_in">System_Ext</span>(meeting, <span class="hljs-string">&quot;Meeting app&quot;</span>, <span class="hljs-string">&quot;Zoom / Teams / etc. — Hark listens to its audio output&quot;</span>)
+
+    <span class="hljs-built_in">Rel</span>(user, hark, <span class="hljs-string">&quot;Controls + reads transcripts&quot;</span>)
+    <span class="hljs-built_in">Rel</span>(meeting, hark, <span class="hljs-string">&quot;System audio output&quot;</span>, <span class="hljs-string">&quot;ScreenCaptureKit&quot;</span>)
+    <span class="hljs-built_in">Rel</span>(user, hark, <span class="hljs-string">&quot;Microphone&quot;</span>, <span class="hljs-string">&quot;AVAudioEngine&quot;</span>)
+    <span class="hljs-built_in">Rel</span>(hark, vault, <span class="hljs-string">&quot;Reads + writes .md files&quot;</span>)
+    <span class="hljs-built_in">Rel</span>(hark, claude, <span class="hljs-string">&quot;Text-only, user-invoked&quot;</span>, <span class="hljs-string">&quot;HTTPS&quot;</span>)
+</code></pre>
+<p><strong>Trust boundaries (critical):</strong></p>
+<ul>
+<li>Everything inside Hark stays on the Mac.</li>
+<li>Vault is on local disk (could be in iCloud Drive, but that&#39;s the <em>user&#39;s</em> choice — Hark doesn&#39;t push it anywhere).</li>
+<li>The Claude API edge is the <strong>only</strong> outbound channel. It carries transcript text and vault excerpts. Never audio.</li>
+</ul>
+<hr>
+<h2 id="container-view">Container view</h2>
+<pre><code class="language-mermaid">graph TB
+    subgraph Mac[<span class="hljs-string">&quot;macOS&quot;</span>]
+        subgraph Electron[<span class="hljs-string">&quot;Electron + Angular UI&quot;</span>]
+            UI[Angular App<span class="hljs-variable">&lt;br/&gt;</span>Tray + Main + Q&amp;A panel]
+            Main[Electron Main<span class="hljs-variable">&lt;br/&gt;</span>Window mgmt, hotkeys,<span class="hljs-variable">&lt;br/&gt;</span>auto-updater]
+        end
+
+        subgraph Engine[<span class="hljs-string">&quot;Swift Engine Binary&quot;</span>]
+            Capture[Audio Capture<span class="hljs-variable">&lt;br/&gt;</span>ScreenCaptureKit +<span class="hljs-variable">&lt;br/&gt;</span>AVAudioEngine]
+            ASR[WhisperKit<span class="hljs-variable">&lt;br/&gt;</span>large-v3-turbo]
+            VAD[Silero VAD<span class="hljs-variable">&lt;br/&gt;</span>CoreML]
+            Diar[FluidAudio<span class="hljs-variable">&lt;br/&gt;</span>diarization]
+            SpkMatch[Speaker Matcher<span class="hljs-variable">&lt;br/&gt;</span>cosine similarity]
+            WS[Swift NIO<span class="hljs-variable">&lt;br/&gt;</span>WebSocket server]
+            Trans[NLLB-200<span class="hljs-variable">&lt;br/&gt;</span>CoreML translation]
+        end
+
+        Vault[(Vault folder<span class="hljs-variable">&lt;br/&gt;</span>~/Documents/vault/hark<span class="hljs-variable">&lt;br/&gt;</span>git-backed)]
+        AppData[(~/Library/Application<span class="hljs-variable">&lt;br/&gt;</span>Support/Hark/<span class="hljs-variable">&lt;br/&gt;</span>models cache)]
+        Keychain[(macOS Keychain<span class="hljs-variable">&lt;br/&gt;</span>Anthropic API key)]
+    end
+
+    Claude[Claude API<span class="hljs-variable">&lt;br/&gt;</span>HTTPS]
+
+    UI <span class="hljs-variable">&lt;--&gt;</span>|<span class="hljs-string">WebSocket :PORT</span>|<span class="hljs-string"> WS
+    Capture --&gt; VAD --&gt; ASR --&gt; WS
+    WS --&gt; Diar --&gt; SpkMatch
+    SpkMatch &lt;--&gt; Vault
+    UI --&gt; Vault
+    Main --&gt; Keychain
+    Main -.-&gt;</span>|<span class="hljs-string">user-invoked only</span>|<span class="hljs-string"> Claude
+    ASR --&gt; AppData
+    Trans --&gt; AppData</span>
+</code></pre>
+<h3 id="components">Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Language</th>
+<th>Process</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Angular UI</td>
+<td>TypeScript</td>
+<td>Electron renderer</td>
+<td>All user-facing surfaces: tray menu, main window, Q&amp;A panel, settings</td>
+</tr>
+<tr>
+<td>Electron Main</td>
+<td>TypeScript / Node</td>
+<td>Electron main</td>
+<td>Window/tray management, global hotkeys, auto-updater, Keychain access, Claude API client</td>
+</tr>
+<tr>
+<td>Swift Engine</td>
+<td>Swift</td>
+<td>Separate sidecar binary</td>
+<td>Audio capture, ASR, diarization, translation, speaker matching, WebSocket server</td>
+</tr>
+<tr>
+<td>Vault</td>
+<td>Plain markdown files + <code>.git</code></td>
+<td>(on disk)</td>
+<td>Source of truth for transcripts, notes, speaker embeddings</td>
+</tr>
+<tr>
+<td>App Data</td>
+<td>Files in <code>~/Library/Application Support/Hark/</code></td>
+<td>(on disk)</td>
+<td>Model caches, preferences, indexed embeddings</td>
+</tr>
+</tbody></table>
+<h3 id="why-a-separate-swift-engine-instead-of-in-process-node">Why a separate Swift engine instead of in-process Node?</h3>
+<ul>
+<li><strong>Performance:</strong> WhisperKit on ANE wants real-time priority; running it inside Electron&#39;s main process would deadline-starve UI rendering.</li>
+<li><strong>Crash isolation:</strong> if the engine OOMs (large model + 4-hour meeting), the UI survives and can offer restart.</li>
+<li><strong>Permission model:</strong> ScreenCaptureKit permission is per-binary on macOS — keeping it in a stable signed Swift binary is more user-friendly than re-prompting on every Electron update.</li>
+<li><strong>Language fit:</strong> WhisperKit, ScreenCaptureKit, AVAudioEngine, FluidAudio are all Swift-native. No FFI tax.</li>
+</ul>
+<h3 id="why-electron-not-tauri-or-swiftui">Why Electron, not Tauri or SwiftUI?</h3>
+<p>See <a href="~/Documents/project/hark/docs/decisions/0001-electron-over-tauri.md">ADR-0001</a>.</p>
+<hr>
+<h2 id="component-view-swift-engine">Component view: Swift Engine</h2>
+<pre><code class="language-mermaid">graph LR
+    subgraph Capture[<span class="hljs-string">&quot;Capture Layer&quot;</span>]
+        SCK[ScreenCaptureKit&lt;br/&gt;system audio]
+        AVE[AVAudioEngine&lt;br/&gt;mic]
+        Mixer[Mixer +&lt;br/&gt;<span class="hljs-number">16</span>kHz resampler]
+    <span class="hljs-keyword">end</span>
+
+    subgraph Pipeline[<span class="hljs-string">&quot;ASR Pipeline&quot;</span>]
+        <span class="hljs-keyword">Ring</span>[<span class="hljs-keyword">Ring</span> Buffer]
+        VAD[Silero VAD]
+        Win[Sliding Window&lt;br/&gt;<span class="hljs-number">30</span>s / <span class="hljs-number">5</span>s hop]
+        Whisper[WhisperKit]
+    <span class="hljs-keyword">end</span>
+
+    subgraph Post[<span class="hljs-string">&quot;Post-processing&quot;</span>]
+        Diar[Diarization]
+        SpkMatch[Speaker Matcher]
+        <span class="hljs-keyword">Term</span>[<span class="hljs-keyword">Term</span> Detector&lt;br/&gt;vault index]
+    <span class="hljs-keyword">end</span>
+
+    subgraph Output[<span class="hljs-string">&quot;Output&quot;</span>]
+        WS[WebSocket Server]
+        Writer[Vault Writer&lt;br/&gt;markdown + git]
+    <span class="hljs-keyword">end</span>
+
+    SCK --&gt; Mixer
+    AVE --&gt; Mixer
+    Mixer --&gt; <span class="hljs-keyword">Ring</span>
+    <span class="hljs-keyword">Ring</span> --&gt; VAD
+    VAD --&gt; Win
+    Win --&gt; Whisper
+    Whisper --&gt; WS
+    Whisper --&gt; Diar
+    Diar --&gt; SpkMatch
+    Whisper --&gt; <span class="hljs-keyword">Term</span>
+    <span class="hljs-keyword">Term</span> --&gt; WS
+    SpkMatch --&gt; Writer
+    SpkMatch --&gt; WS
+</code></pre>
+<p>Each box is roughly a Swift <code>actor</code> or a dedicated dispatch queue. Backpressure: if WhisperKit can&#39;t keep up (RTF &gt; 1), the ring buffer drops oldest unprocessed audio and emits a warning event over WS. The UI surfaces it as a yellow banner.</p>
+<hr>
+<h2 id="component-view-electron--angular-ui">Component view: Electron + Angular UI</h2>
+<pre><code class="language-mermaid">graph TB
+    subgraph Renderer[&quot;Renderer (Angular)&quot;]
+        Tray[Tray Menu&lt;br/&gt;Component]
+        Main[Main <span class="hljs-keyword">Window</span>&lt;br/&gt;- Live Transcript&lt;br/&gt;- Bookmarks&lt;br/&gt;- Q&amp;A Panel&lt;br/&gt;- Term Cards]
+        <span class="hljs-keyword">Set</span>[Settings&lt;br/&gt;Component]
+    <span class="hljs-keyword">end</span>
+
+    subgraph MainProc[&quot;Electron Main (Node)&quot;]
+        WSC[WebSocket Client&lt;br/&gt;→ Swift engine]
+        Hotkey[<span class="hljs-keyword">Global</span> Hotkeys&lt;br/&gt;⌘⇧R / ⌘⇧B / ⌘⇧Q / ⌘⇧S]
+        Updater[electron-updater]
+        Anthropic[Anthropic SDK&lt;br/&gt;<span class="hljs-type">text</span>-<span class="hljs-keyword">only</span>]
+        KeyMgr[Keychain Bridge]
+        VaultIO[Vault FS + git <span class="hljs-keyword">wrapper</span>]
+    <span class="hljs-keyword">end</span>
+
+    Tray &lt;<span class="hljs-comment">--&gt; MainProc</span>
+    Main &lt;<span class="hljs-comment">--&gt; MainProc</span>
+    <span class="hljs-keyword">Set</span> &lt;<span class="hljs-comment">--&gt; MainProc</span>
+    WSC &lt;<span class="hljs-comment">--&gt;|ws://localhost:PORT| EngineWS[Swift Engine WS]</span>
+    Anthropic <span class="hljs-comment">--&gt;|HTTPS| ClaudeAPI[Claude API]</span>
+</code></pre>
+<p>Renderer talks to Main via Electron IPC. Main holds all sensitive surfaces (Keychain, network, FS). Renderer is locked down: <code>contextIsolation: true</code>, <code>nodeIntegration: false</code>, strict CSP.</p>
+<hr>
+<h2 id="data-stores">Data stores</h2>
+<table>
+<thead>
+<tr>
+<th>Store</th>
+<th>Where</th>
+<th>Format</th>
+<th>Lifetime</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Meetings</td>
+<td><code>vault/hark/meetings/*.md</code></td>
+<td>Markdown + YAML frontmatter</td>
+<td>Permanent, git-versioned</td>
+</tr>
+<tr>
+<td>Notes</td>
+<td><code>vault/hark/notes/*.md</code></td>
+<td>Markdown</td>
+<td>User-managed</td>
+</tr>
+<tr>
+<td>Speaker embeddings</td>
+<td><code>vault/.speakers/*.json</code></td>
+<td>JSON: <code>{name, embeddings: number[][], meetings_seen}</code></td>
+<td>Permanent</td>
+</tr>
+<tr>
+<td>Term index</td>
+<td><code>~/Library/Application Support/Hark/term-index.sqlite</code></td>
+<td>SQLite FTS5</td>
+<td>Rebuildable from vault</td>
+</tr>
+<tr>
+<td>Embedding index (RAG)</td>
+<td><code>~/Library/Application Support/Hark/embeddings.sqlite</code></td>
+<td>SQLite + sqlite-vec</td>
+<td>Rebuildable from vault</td>
+</tr>
+<tr>
+<td>Model cache</td>
+<td><code>~/Library/Application Support/Hark/models/</code></td>
+<td>CoreML bundles</td>
+<td>Permanent</td>
+</tr>
+<tr>
+<td>Preferences</td>
+<td><code>~/Library/Application Support/Hark/prefs.json</code></td>
+<td>JSON</td>
+<td>User settings</td>
+</tr>
+<tr>
+<td>Anthropic API key</td>
+<td>macOS Keychain</td>
+<td>n/a</td>
+<td>User-managed</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>~/Library/Logs/Hark/*.log</code></td>
+<td>Plain text, rotated</td>
+<td>7-day retention</td>
+</tr>
+</tbody></table>
+<p><strong>Why SQLite for embedding index?</strong> Local-only, zero dependency, fast enough for 100K+ chunks, supports vector similarity via <code>sqlite-vec</code> extension. No need for Pinecone/Weaviate.</p>
+<hr>
+<h2 id="threat-model-summary">Threat model summary</h2>
+<table>
+<thead>
+<tr>
+<th>Threat</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Closed-source binary captures and exfiltrates audio</td>
+<td>Hark is open-source (planned); audio path is auditable; <code>privacy-auditor</code> agent runs each release</td>
+</tr>
+<tr>
+<td>Network attacker MITM the Claude API call</td>
+<td>TLS pinning unnecessary — Anthropic SDK handles cert validation; we trust Anthropic&#39;s transport</td>
+</tr>
+<tr>
+<td>Local malware reads the vault</td>
+<td>Out of scope — vault is plain files; user&#39;s responsibility to secure their disk (FileVault recommended)</td>
+</tr>
+<tr>
+<td>API key leaks to logs or commits</td>
+<td>Stored in Keychain, never written to disk in plaintext, never logged; <code>privacy-auditor</code> checks for <code>sk-ant-</code> patterns in code</td>
+</tr>
+<tr>
+<td>User accidentally records a confidential conversation</td>
+<td>Pause button always visible; ⌘⇧S kills capture instantly; redact-before-send on by default</td>
+</tr>
+<tr>
+<td>Speaker fingerprint reverse-engineered to identify someone</td>
+<td>Embeddings stay local; never networked. Trust boundary: the disk the embeddings live on.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="07-data-flows.html">Data flows</a> — sequence diagrams for each major flow</li>
+<li><a href="08-websocket-api-contract.html">WebSocket API contract</a> — message schemas</li>
+<li>Handoff doc — stack rationale</li>
+<li>ADRs — individual decisions</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#system-context">System context</a>
+<a class="toc-l2" href="#container-view">Container view</a>
+<a class="toc-l3" href="#components">Components</a>
+<a class="toc-l3" href="#why-a-separate-swift-engine-instead-of-in-process-node">Why a separate Swift engine instead of in-process Node?</a>
+<a class="toc-l3" href="#why-electron-not-tauri-or-swiftui">Why Electron, not Tauri or SwiftUI?</a>
+<a class="toc-l2" href="#component-view-swift-engine">Component view: Swift Engine</a>
+<a class="toc-l2" href="#component-view-electron--angular-ui">Component view: Electron + Angular UI</a>
+<a class="toc-l2" href="#data-stores">Data stores</a>
+<a class="toc-l2" href="#threat-model-summary">Threat model summary</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

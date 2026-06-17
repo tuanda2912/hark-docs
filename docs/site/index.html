@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hark — Product Documentation Index · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a class="active" href="./index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="./product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="./product/02-success-metrics.html">Success Metrics</a>
+<a href="./product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="./analysis/04-user-journeys.html">User Journeys</a>
+<a href="./analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="./design/06-architecture-overview.html">Architecture Overview</a>
+<a href="./design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="./design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="./design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="./design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="./qa/09-test-strategy.html">Test Strategy</a>
+<a href="./qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Hark — Product Documentation Index</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">living</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="hark--product-documentation">Hark — Product Documentation</h1>
+<p>A local-first, macOS-only meeting transcription tool with a built-in markdown second-brain. Live captions, translation, speaker diarization, and Claude-powered Q&amp;A — all running on the user&#39;s Mac. No cloud ASR.</p>
+<h2 id="how-this-folder-is-organized">How this folder is organized</h2>
+<p>These docs simulate the artifact set a four-person product team (PO / BA / Dev / Test) would produce. They&#39;re written for two audiences:</p>
+<ol>
+<li><strong>Future me</strong> — to avoid re-litigating decisions and to onboard new sub-agents into the project.</li>
+<li><strong>Future company audience</strong> — to show the full reasoning chain behind a product, not just the code.</li>
+</ol>
+<p>Every non-trivial decision also lives as an ADR in the source repo: <code>~/Documents/project/hark/docs/decisions/</code>.</p>
+<h2 id="document-map">Document map</h2>
+<h3 id="product-po">Product (PO)</h3>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="product/01-vision-and-personas.html">01-vision-and-personas</a></td>
+<td>Why this exists, who it&#39;s for, what success looks like at the elevator-pitch level</td>
+</tr>
+<tr>
+<td><a href="product/02-success-metrics.html">02-success-metrics</a></td>
+<td>How we know v1 worked. Specific, measurable, time-bound.</td>
+</tr>
+<tr>
+<td><a href="product/03-roadmap.html">03-roadmap</a></td>
+<td>v1 scope, v1.5, v2. What&#39;s in, what&#39;s deferred, what&#39;s rejected.</td>
+</tr>
+</tbody></table>
+<h3 id="analysis-ba">Analysis (BA)</h3>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="analysis/04-user-journeys.html">04-user-journeys</a></td>
+<td>End-to-end flows: first launch, joining a meeting, post-meeting, asking Q&amp;A</td>
+</tr>
+<tr>
+<td><a href="analysis/05-user-stories.html">05-user-stories</a></td>
+<td>Epics → stories with acceptance criteria, sized for backlog grooming</td>
+</tr>
+</tbody></table>
+<h3 id="design-dev">Design (Dev)</h3>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="design/06-architecture-overview.html">06-architecture-overview</a></td>
+<td>C4-style high-level view of components and their responsibilities</td>
+</tr>
+<tr>
+<td><a href="design/07-data-flows.html">07-data-flows</a></td>
+<td>Audio pipeline, transcript pipeline, RAG pipeline, vault sync — with sequence diagrams</td>
+</tr>
+<tr>
+<td><a href="design/08-websocket-api-contract.html">08-websocket-api-contract</a></td>
+<td>JSON message schemas between Swift engine and Electron UI</td>
+</tr>
+<tr>
+<td><a href="design/11-ui-visual-brief.html">11-ui-visual-brief</a></td>
+<td>Paste-ready brief for AI design tools (Claude.ai, Figma Make, v0)</td>
+</tr>
+</tbody></table>
+<h3 id="qa-test">QA (Test)</h3>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="qa/09-test-strategy.html">09-test-strategy</a></td>
+<td>What we test, how, when. Privacy-test checklist included — non-negotiable.</td>
+</tr>
+<tr>
+<td><a href="qa/10-performance-benchmarks.html">10-performance-benchmarks</a></td>
+<td>RTF, latency, RAM targets and the harness that measures them</td>
+</tr>
+</tbody></table>
+<h2 id="working-agreements">Working agreements</h2>
+<ul>
+<li><strong>Single source of truth:</strong> stack decisions live in the <a href="~/Documents/project/hark/meetingmind-handoff.md">handoff doc</a>. These docs explain <em>what</em> and <em>why for users</em>; the handoff explains <em>how it&#39;s built</em>.</li>
+<li><strong>Living docs.</strong> When something changes, update the doc in the same commit. Stale docs are worse than no docs.</li>
+<li><strong>No code in docs unless it&#39;s contract.</strong> API schemas yes; example UI snippets no.</li>
+<li><strong>Vault is sacred.</strong> This folder lives in the vault so it&#39;s git-versioned alongside meeting notes — but never auto-edited by the app.</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#how-this-folder-is-organized">How this folder is organized</a>
+<a class="toc-l2" href="#document-map">Document map</a>
+<a class="toc-l3" href="#product-po">Product (PO)</a>
+<a class="toc-l3" href="#analysis-ba">Analysis (BA)</a>
+<a class="toc-l3" href="#design-dev">Design (Dev)</a>
+<a class="toc-l3" href="#qa-test">QA (Test)</a>
+<a class="toc-l2" href="#working-agreements">Working agreements</a></nav>
+<script src="./assets/app.js"></script>
+</body>
+</html>

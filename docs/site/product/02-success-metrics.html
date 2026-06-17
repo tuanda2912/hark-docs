@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Success Metrics · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a class="active" href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Success Metrics</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="success-metrics">Success Metrics</h1>
+<p>How we know v1 worked. Solo project, so these are honest internal targets — not investor decks.</p>
+<h2 id="north-star">North Star</h2>
+<p><strong>Personal:</strong> <em>I use Hark in every work meeting for 4 consecutive weeks without falling back to manual note-taking.</em></p>
+<p>If I&#39;m still typing notes by hand because Hark is too slow / inaccurate / annoying, the product failed regardless of what the benchmarks say.</p>
+<h2 id="tier-1--must-hit-by-end-of-v1-otherwise-dont-ship">Tier 1 — Must hit by end of v1 (otherwise: don&#39;t ship)</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+<th>How measured</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Real-time factor (RTF)</td>
+<td>&lt; 0.5 on M-series Mac</td>
+<td>Phase 0 harness — 60s audio sample, large-v3-turbo, repeat 5x</td>
+</tr>
+<tr>
+<td>Spoken-word → visible-text latency</td>
+<td>&lt; 1.5s p95</td>
+<td>Manual stopwatch on 10 real meetings</td>
+</tr>
+<tr>
+<td>Word Error Rate (WER), EN</td>
+<td>&lt; 12% on technical meetings</td>
+<td>Sample 5 meetings, compare to manual transcript</td>
+</tr>
+<tr>
+<td>Word Error Rate (WER), TH↔EN code-switch</td>
+<td>&lt; 25%</td>
+<td>Same method, separate sample</td>
+</tr>
+<tr>
+<td>Speaker diarization accuracy</td>
+<td>&gt; 80% segments correctly clustered</td>
+<td>Sample 5 meetings, count mislabeled segments</td>
+</tr>
+<tr>
+<td>App crash rate</td>
+<td>0 crashes in 4-week dogfood period</td>
+<td>Local logs</td>
+</tr>
+<tr>
+<td>Privacy audit</td>
+<td>0 BLOCKER findings</td>
+<td><code>privacy-auditor</code> agent run on full codebase before each release</td>
+</tr>
+</tbody></table>
+<h2 id="tier-2--strong-to-have">Tier 2 — Strong-to-have</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+<th>How measured</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cold-start to ready-to-record</td>
+<td>&lt; 5s on launch</td>
+<td>Manual timing</td>
+</tr>
+<tr>
+<td>RAM at idle</td>
+<td>&lt; 2.5 GB</td>
+<td>Activity Monitor</td>
+</tr>
+<tr>
+<td>RAM during 1-hour meeting</td>
+<td>&lt; 4 GB</td>
+<td>Activity Monitor</td>
+</tr>
+<tr>
+<td>In-meeting Q&amp;A response time</td>
+<td>&lt; 3s p95</td>
+<td>Manual timing on 20 queries</td>
+</tr>
+<tr>
+<td>Meeting summary quality</td>
+<td>&quot;Useful without edit&quot; on 8/10 meetings</td>
+<td>Self-rated after each meeting</td>
+</tr>
+<tr>
+<td>Speaker auto-recognition (after 5+ meetings with a person)</td>
+<td>&gt; 90%</td>
+<td>Count manual re-tags needed</td>
+</tr>
+<tr>
+<td>Daily Claude API spend</td>
+<td>&lt; $0.50/day at 4hr meetings</td>
+<td>Anthropic console</td>
+</tr>
+</tbody></table>
+<h2 id="tier-3--nice-signals">Tier 3 — Nice signals</h2>
+<ul>
+<li>Number of meetings stored in vault after 4 weeks (proxy for actual usage)</li>
+<li>Number of Q&amp;A queries that referenced prior meetings (proxy for vault being useful, not just an archive)</li>
+<li>Number of action items extracted that I actually did (proxy for summary quality)</li>
+</ul>
+<h2 id="what-i-am-not-measuring-and-why">What I am NOT measuring (and why)</h2>
+<ul>
+<li><strong>DAU/WAU, retention curves</strong> — solo product, N=1, the metric is &quot;did I use it today.&quot;</li>
+<li><strong>NPS, satisfaction scores</strong> — self-rating my own product is delusional.</li>
+<li><strong>Conversion funnel</strong> — no funnel, no purchase, no signup. This is a personal tool first.</li>
+<li><strong>Industry-benchmark WER vs Whisper paper claims</strong> — paper conditions don&#39;t match meeting audio. Only my own real-meeting WER matters.</li>
+</ul>
+<h2 id="when-we-revisit">When we revisit</h2>
+<p>After the 4-week dogfood period (Phase 7 + month buffer):</p>
+<ul>
+<li><strong>If Tier 1 all green:</strong> start planning v1.5 polish + decide whether to publish.</li>
+<li><strong>If any Tier 1 red:</strong> stop feature work. Fix the broken metric, re-measure, re-decide.</li>
+<li><strong>If Tier 1 green but I&#39;m not actually using it:</strong> that&#39;s the most important signal. Something about the UX is wrong even if benchmarks pass. Diagnose before shipping more.</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../qa/09-test-strategy.html">Test strategy</a> — how the QA-side measurement works</li>
+<li><a href="../qa/10-performance-benchmarks.html">Performance benchmarks</a> — RTF/latency harness specifics</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#north-star">North Star</a>
+<a class="toc-l2" href="#tier-1--must-hit-by-end-of-v1-otherwise-dont-ship">Tier 1 — Must hit by end of v1 (otherwise: don&amp;#39;t ship)</a>
+<a class="toc-l2" href="#tier-2--strong-to-have">Tier 2 — Strong-to-have</a>
+<a class="toc-l2" href="#tier-3--nice-signals">Tier 3 — Nice signals</a>
+<a class="toc-l2" href="#what-i-am-not-measuring-and-why">What I am NOT measuring (and why)</a>
+<a class="toc-l2" href="#when-we-revisit">When we revisit</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

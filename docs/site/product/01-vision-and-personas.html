@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vision &amp; Personas · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a class="active" href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Vision &amp; Personas</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="vision--personas">Vision &amp; Personas</h1>
+<h2 id="one-line-pitch">One-line pitch</h2>
+<p><strong>Hark is a meeting transcription tool you can actually trust with your work calls — because every byte of audio stays on your Mac.</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>Knowledge workers run on meetings. The good tools (Otter, Granola, Fireflies, Alt) all share the same architecture: your audio gets streamed to a SaaS, transcribed in their cloud, stored on their servers. For people in regulated industries (banking, insurance, healthcare, legal) or with strict corporate IT, this is either:</p>
+<ul>
+<li><strong>Forbidden</strong> — Group Recording Policy, Thai PDPA, EU GDPR, Intune-blocked installations</li>
+<li><strong>Risky</strong> — closed-source binary listening to confidential conversations with vague data-retention promises</li>
+<li><strong>Both</strong></li>
+</ul>
+<p>So they either skip the meeting tool entirely (taking notes by hand, missing context) or use one of those tools quietly and hope nothing leaks.</p>
+<h2 id="the-opportunity">The opportunity</h2>
+<p>A <strong>local-first</strong> alternative. Apple Silicon Macs in 2026 can run Whisper large-v3-turbo on the Neural Engine at &gt;2x real-time. The hardware is finally good enough to do production-grade live transcription without the cloud. No vendor has shipped a polished, trustworthy version of this yet.</p>
+<h2 id="vision-3-sentence-form">Vision (3-sentence form)</h2>
+<blockquote>
+<p><em>Hark turns every meeting into a structured, searchable memory that lives entirely on your machine. Live captions and translation during the call, summary and action items after, and a personal knowledge graph that grows with every conversation. Built for the kind of work you can&#39;t afford to leak.</em></p>
+</blockquote>
+<h2 id="non-goals">Non-goals</h2>
+<ul>
+<li><strong>Not a Zoom/Teams replacement.</strong> Hark listens to whatever Zoom/Teams plays — we don&#39;t replace the meeting client.</li>
+<li><strong>Not for casual users who want frictionless.</strong> Hark asks for ScreenCapture permission, requires a one-time speaker tag, costs ~$0.50/month in Claude API tokens. Users who want zero friction will keep using Granola.</li>
+<li><strong>Not a transcription-as-a-service.</strong> No accounts, no cloud sync, no team sharing in v1.</li>
+</ul>
+<h2 id="personas">Personas</h2>
+<h3 id="primary-the-compliance-bound-knowledge-worker">Primary: &quot;The Compliance-Bound Knowledge Worker&quot;</h3>
+<ul>
+<li><strong>Profile:</strong> Senior engineer / consultant / analyst at a regulated company (bank, insurer, law firm, healthcare). 5–15 years experience.</li>
+<li><strong>Tech:</strong> macOS daily driver, comfortable with hotkeys and config files, won&#39;t sign up for SaaS that touches work data.</li>
+<li><strong>Pain:</strong> 4–6 hours/day in meetings. Loses context across meetings. Hand-typed notes miss 60% of what was said. Existing tools are banned or untrusted.</li>
+<li><strong>Job to be done:</strong> &quot;Help me remember and act on what was said in my meetings without breaking compliance.&quot;</li>
+<li><strong>What they&#39;ll pay:</strong> One-time license $49–99, or self-host free + bring-your-own-Anthropic-key. Subscription is hostile to this persona.</li>
+</ul>
+<h3 id="real-instance-quynh-anh-me">Real instance: Quynh Anh (me)</h3>
+<ul>
+<li>Java/Spring backend, 7+ yrs, working in Thailand on banking/insurance projects</li>
+<li>Bilingual TH ↔ EN meetings daily, code-switching mid-sentence</li>
+<li>Corporate Intune blocks Exchange sync to third-party clients → no calendar integration possible</li>
+<li>Already manually note-taking in Obsidian; wants that workflow to absorb meeting transcripts seamlessly</li>
+</ul>
+<h3 id="secondary-the-privacy-conscious-independent">Secondary: &quot;The Privacy-Conscious Independent&quot;</h3>
+<ul>
+<li><strong>Profile:</strong> Solo consultant, journalist, therapist, researcher. Owns their own work.</li>
+<li><strong>Pain:</strong> Same context loss, plus genuine ethical/legal duty to protect client confidentiality (privilege, HIPAA-equivalent, source protection).</li>
+<li><strong>Why they&#39;re secondary, not primary:</strong> smaller segment, often Mac-light. Worth building for, not worth optimizing for.</li>
+</ul>
+<h3 id="anti-persona-the-friction-averse-generalist">Anti-persona: &quot;The Friction-Averse Generalist&quot;</h3>
+<ul>
+<li>Wants Granola&#39;s &quot;join meeting → magic happens&quot; experience.</li>
+<li>Won&#39;t tolerate ScreenCapture permission prompts, won&#39;t manually tag speakers, doesn&#39;t care about data residency.</li>
+<li><strong>We will lose them. That&#39;s fine.</strong> Building for them would compromise the trust model that&#39;s our actual moat.</li>
+</ul>
+<h2 id="why-this-is-the-right-product-for-the-builder">Why this is the right product for the builder</h2>
+<p>This is a personal product first, market product second. The builder uses it every day on real Allianz-style meetings (with manager/DPO sign-off). Dogfooding is structural — if Hark doesn&#39;t earn its keep in the builder&#39;s own daily standups by Phase 4, the project gets killed. That&#39;s the honesty filter.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="02-success-metrics.html">Success metrics</a> — how we know we got this right</li>
+<li><a href="03-roadmap.html">Roadmap</a> — what&#39;s in v1 vs deferred</li>
+<li><a href="~/Documents/project/hark/meetingmind-handoff.md">Handoff doc</a> — full design rationale</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#one-line-pitch">One-line pitch</a>
+<a class="toc-l2" href="#the-problem">The problem</a>
+<a class="toc-l2" href="#the-opportunity">The opportunity</a>
+<a class="toc-l2" href="#vision-3-sentence-form">Vision (3-sentence form)</a>
+<a class="toc-l2" href="#non-goals">Non-goals</a>
+<a class="toc-l2" href="#personas">Personas</a>
+<a class="toc-l3" href="#primary-the-compliance-bound-knowledge-worker">Primary: &amp;quot;The Compliance-Bound Knowledge Worker&amp;quot;</a>
+<a class="toc-l3" href="#real-instance-quynh-anh-me">Real instance: Quynh Anh (me)</a>
+<a class="toc-l3" href="#secondary-the-privacy-conscious-independent">Secondary: &amp;quot;The Privacy-Conscious Independent&amp;quot;</a>
+<a class="toc-l3" href="#anti-persona-the-friction-averse-generalist">Anti-persona: &amp;quot;The Friction-Averse Generalist&amp;quot;</a>
+<a class="toc-l2" href="#why-this-is-the-right-product-for-the-builder">Why this is the right product for the builder</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

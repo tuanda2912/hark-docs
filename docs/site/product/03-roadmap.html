@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap · Hark Docs</title>
+<script>try{var t=localStorage.getItem('hark-docs-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+<div class="scrim" hidden></div>
+<aside class="sidebar">
+  <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Hark Docs</a>
+  <input class="search" type="search" placeholder="Filter docs…" aria-label="Filter docs">
+  <nav class="nav"><div class="nav-group"><div class="nav-group-label">Overview</div><a href="../index.html">Hark — Product Documentation Index</a></div>
+<div class="nav-group"><div class="nav-group-label">Product</div><a href="../product/01-vision-and-personas.html">Vision &amp; Personas</a>
+<a href="../product/02-success-metrics.html">Success Metrics</a>
+<a class="active" href="../product/03-roadmap.html">Roadmap</a></div>
+<div class="nav-group"><div class="nav-group-label">Analysis</div><a href="../analysis/04-user-journeys.html">User Journeys</a>
+<a href="../analysis/05-user-stories.html">User Stories</a></div>
+<div class="nav-group"><div class="nav-group-label">Design</div><a href="../design/06-architecture-overview.html">Architecture Overview</a>
+<a href="../design/07-data-flows.html">Data Flows &amp; Sequence Diagrams</a>
+<a href="../design/08-websocket-api-contract.html">WebSocket API Contract — Engine ↔ UI</a>
+<a href="../design/11-ui-visual-brief.html">UI/UX Visual Design Brief</a>
+<a href="../design/ui/README.html">Handoff: Hark — Local-First Meeting Transcription (macOS)</a></div>
+<div class="nav-group"><div class="nav-group-label">QA</div><a href="../qa/09-test-strategy.html">Test Strategy</a>
+<a href="../qa/10-performance-benchmarks.html">Performance Benchmarks</a></div></nav>
+</aside>
+<main class="content">
+  <header class="topbar">
+    <div class="crumbs">Roadmap</div>
+    <button class="theme-btn" type="button" aria-label="Toggle light/dark theme"></button>
+  </header>
+  <article class="doc">
+    <div class="doc-meta"><span class="meta-pill">draft</span><span class="meta-pill">updated 2026-05-24</span></div>
+    <h1 id="roadmap">Roadmap</h1>
+<p>Phased delivery aligned with the technical plan in the <a href="~/Documents/project/hark/meetingmind-handoff.md">handoff doc</a>. Each phase ends with a working artifact, not an intermediate one.</p>
+<h2 id="v1--trustworthy-live-transcription-with-a-brain-57-weeks">v1 — &quot;Trustworthy live transcription with a brain&quot; (5–7 weeks)</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What ships</th>
+<th>Demo-able outcome</th>
+<th>Est.</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0</strong></td>
+<td>RTF benchmark harness</td>
+<td>Numbers in a markdown file — go/no-go on the entire stack</td>
+<td>1 day</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>Swift engine batch mode</td>
+<td>Drop a <code>.wav</code> in, get JSON segments out</td>
+<td>3–5 days</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Audio capture</td>
+<td>Capture 60s of mixed mic + system audio, write to disk</td>
+<td>3–5 days</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Streaming engine</td>
+<td>WebSocket emits partial + final segments live</td>
+<td>3–5 days</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Electron UI MVP</td>
+<td>Menu-bar tray, main window, live transcript view, manual speaker tag</td>
+<td>1–2 weeks</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>Diarization</td>
+<td>FluidAudio runs post-meeting, speakers labeled and persisted</td>
+<td>2–3 days</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>Claude integration</td>
+<td>Summary, action items, in-meeting Q&amp;A, translation modes</td>
+<td>2–3 days</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>Hardening</td>
+<td>Sign + notarize, auto-update, settings, hotkeys, error states</td>
+<td>1–2 weeks</td>
+</tr>
+</tbody></table>
+<p><strong>v1 includes:</strong></p>
+<ul>
+<li>Live captions (English + Thai, auto-detect, code-switch supported)</li>
+<li>Translation: local NLLB-200 (fast) OR Claude API (high-quality) — user toggle</li>
+<li>Speaker labels with manual tag + voice fingerprint memory across meetings</li>
+<li>Bookmark hotkey during meetings</li>
+<li>Post-meeting summary, action items, decisions, open questions</li>
+<li>In-meeting LLM Q&amp;A over vault + past transcripts (RAG with local embeddings)</li>
+<li>Term capture panel — detected vault terms get inline definitions</li>
+<li>Vault: Obsidian-compatible markdown folder, git-versioned, auto-export per meeting</li>
+<li>Auto-link entities during transcription</li>
+<li>Whisper vocab auto-grows from vault terms</li>
+<li>Privacy: pause/resume button, redact-before-send toggle for Claude API path</li>
+</ul>
+<p><strong>v1 does NOT include:</strong></p>
+<ul>
+<li>Calendar integration (blocked — corporate Intune)</li>
+<li>Auto-join Zoom/Teams</li>
+<li>Confluence-style visual version diffs</li>
+<li>Active-speaker OCR from Teams window</li>
+<li>Native SwiftUI UI</li>
+<li>Windows / Linux / mobile</li>
+</ul>
+<h2 id="v15--polish--longevity-4-weeks-after-v1-dogfood">v1.5 — Polish &amp; longevity (~4 weeks, after v1 dogfood)</h2>
+<p>Triggered only if v1 hits all Tier 1 success metrics AND I&#39;m actively using it daily.</p>
+<ul>
+<li>Speaker fingerprint improvements: per-mic profiles, &quot;this is the same person on a different call&quot;</li>
+<li>Better vault UX: backlinks panel, graph view (or surrender and tell users to use Obsidian directly)</li>
+<li>Summary templates per meeting type (1:1 standup, design review, customer call) — auto-detected from attendees or chosen at start</li>
+<li>Hotkey-driven moment annotations during meetings (&quot;decision&quot;, &quot;question&quot;, &quot;todo&quot; — not just plain bookmark)</li>
+<li>Onboarding flow that doesn&#39;t suck</li>
+<li>Possibly: native SwiftUI rewrite of the UI for ~30% RAM reduction and Mac-native feel</li>
+</ul>
+<h2 id="v2--open-questions-not-commitments">v2 — Open questions, not commitments</h2>
+<p>Things I&#39;d consider only if v1 succeeds AND there&#39;s signal from outside myself:</p>
+<ul>
+<li>Optional encrypted multi-device sync (iCloud Drive of the vault folder — <em>not</em> a cloud service we operate)</li>
+<li>Public release on a marketplace (Setapp? Direct sale? Open source?)</li>
+<li>Real-time speaker fingerprint sharing across a small team (each user runs their own Hark; speaker IDs are merged via a peer-shared <code>.speakers/</code> folder)</li>
+<li>Plugin API so the vault can be extended (Obsidian-style)</li>
+</ul>
+<h2 id="explicitly-rejected-dont-re-litigate">Explicitly rejected (don&#39;t re-litigate)</h2>
+<p>These keep coming back in brainstorming. They&#39;re not coming back.</p>
+<ul>
+<li>❌ Cloud ASR (Soniox, AssemblyAI, etc.) — breaks the entire product thesis. See ADR-0004 (TODO).</li>
+<li>❌ Native iOS/Android clients — different OSes, different audio APIs, different threat models. Different product.</li>
+<li>❌ Windows port — was the original reason for Rust engine. Scope cut. ADR-0002.</li>
+<li>❌ Calendar auto-pull — corporate IT blocks every path. Will reconsider only if Microsoft Graph API becomes installable without admin consent (unlikely).</li>
+<li>❌ Auto-join meetings — would require browser automation or platform-specific APIs. Doubles the surface area.</li>
+<li>❌ Team/multi-user features — explicitly out of scope for personal v1.</li>
+<li>❌ Subscription pricing — hostile to the primary persona.</li>
+</ul>
+<h2 id="risks-to-the-roadmap">Risks to the roadmap</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WhisperKit RTF on real Thai-EN code-switch is worse than benchmarks</td>
+<td>Medium</td>
+<td>High</td>
+<td>Phase 0 measures this directly. Fallback: large-v3-turbo Q5 quantized, accept ~3% WER loss for speed.</td>
+</tr>
+<tr>
+<td>Builder runs out of evenings/weekends</td>
+<td>High</td>
+<td>High</td>
+<td>Phase 0–3 alone (~2 wks) = useful CLI. Phases are independently shippable.</td>
+</tr>
+<tr>
+<td>Claude API costs exceed $0.50/day target</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Aggressive prompt caching on transcript; truncate older history.</td>
+</tr>
+<tr>
+<td>Apple breaks WhisperKit or ScreenCaptureKit in macOS 16</td>
+<td>Low</td>
+<td>High</td>
+<td>First-party APIs; Argmax actively maintains WhisperKit. Tolerable risk.</td>
+</tr>
+<tr>
+<td>Diarization quality is so bad it&#39;s unusable</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>FluidAudio is a known port; fallback is pyannote Python sidecar (already considered, ADR-able).</td>
+</tr>
+</tbody></table>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="01-vision-and-personas.html">Vision &amp; personas</a></li>
+<li><a href="02-success-metrics.html">Success metrics</a></li>
+<li><a href="../analysis/05-user-stories.html">User stories</a> — per-epic backlog</li>
+<li>Source repo phased plan: handoff doc</li>
+</ul>
+
+  </article>
+  <footer class="foot">Rendered from <code>hark-docs/docs</code> — Hark is local-first, on-device. The wiki is kept as-is.</footer>
+</main>
+<nav class="toc"><div class="toc-label">On this page</div><a class="toc-l2" href="#v1--trustworthy-live-transcription-with-a-brain-57-weeks">v1 — &amp;quot;Trustworthy live transcription with a brain&amp;quot; (5–7 weeks)</a>
+<a class="toc-l2" href="#v15--polish--longevity-4-weeks-after-v1-dogfood">v1.5 — Polish &amp;amp; longevity (~4 weeks, after v1 dogfood)</a>
+<a class="toc-l2" href="#v2--open-questions-not-commitments">v2 — Open questions, not commitments</a>
+<a class="toc-l2" href="#explicitly-rejected-dont-re-litigate">Explicitly rejected (don&amp;#39;t re-litigate)</a>
+<a class="toc-l2" href="#risks-to-the-roadmap">Risks to the roadmap</a>
+<a class="toc-l2" href="#related">Related</a></nav>
+<script src="../assets/app.js"></script>
+</body>
+</html>

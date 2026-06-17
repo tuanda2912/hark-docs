@@ -7,6 +7,9 @@
 *.swo
 *~
 
+# Docs-site build tooling: the generator + assets are tracked, deps are not.
+tools/node_modules/
+
 # Obsidian: ignore only the volatile per-machine state (matched at any depth, since
 # the vault lives at wiki/.obsidian/, not the repo root).
 # .obsidian/graph.json (the colored graph-view recipe), app.json, appearance.json,
