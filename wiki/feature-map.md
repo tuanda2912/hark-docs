@@ -108,7 +108,7 @@ property, on a real (not synthetic) app.
 - ✅ **Subsystem = capability, for free.** Hark's code-shaped wiki already did `capability → files`
   (the subsystem `## Code map` blocks). The framework only adds the thin `feature → subsystem` register
   (§3, ~10 rows) + the process partition (§1) + the contracts (§2).
-- ✅ **The cross-service contract is the real payload.** Unlike DARP (shared compiler), Hark's polyglot WS
+- ✅ **The cross-service contract is the real payload.** Unlike a single-language monolith (shared compiler), Hark's polyglot WS
   seam is un-greppable *and* un-compilable — so enumerating it (§2/§4) is where the map earns its keep.
 - ✅ **Graph is fresh** (`69d53bc`, 4 files behind HEAD `8e7d009`) — no re-run needed. Status grounded in
   STATUS.md, the project's own source of truth.
