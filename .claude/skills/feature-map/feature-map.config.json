@@ -1,0 +1,48 @@
+{
+  "//": "Config for the /feature-map skill. Paths are RELATIVE to the wiki repo root (this file's repo) so they travel across machines/clones. To reuse on another project: copy the .claude/ folder, then edit this file. Fields marked (derived) are populated by running the skill on a fresh project.",
+
+  "wikiDir": "wiki",
+  "output": "wiki/feature-map.md",
+
+  "codeRepos": [
+    { "name": "hark", "path": "../hark", "graph": "../hark/.understand-anything/knowledge-graph.json" }
+  ],
+
+  "topology": "microservices",
+  "_topology_note": "monolith | microservices. monolith ⇒ file→capability tags only (compiler+tests are the propagation net). microservices ⇒ also a service partition + cross-service contracts.",
+
+  "capabilitySource": "subsystem-pages",
+  "_capabilitySource_note": "subsystem-pages = the wiki is already code-shaped, reuse subsystem slugs as capability tags (Hark). graph-tags = derive a controlled vocab from the graph's per-file tags (curate via query-graph.mjs node-tags).",
+
+  "featureSources": [
+    "../hark/STATUS.md",
+    "../hark/README.md",
+    "../hark/docs/BACKLOG.md"
+  ],
+  "_featureSources_note": "Authoritative sources of user-facing features + their status (status docs, user stories, roadmap, README). The feature-mapper agent reads these.",
+
+  "services": [
+    { "name": "harkd",    "language": "swift",      "layers": ["Engine Core & Audio Capture", "Streaming Daemon & Transcription"] },
+    { "name": "main",     "language": "typescript", "layers": ["Electron Main Process", "Privacy & LLM Egress"] },
+    { "name": "renderer", "language": "typescript", "layers": ["UI Renderer (Angular)"] }
+  ],
+  "_services_note": "(micro only, derived) graph layers grouped into deployable/process units. Polyglot services (different language ⇒ no shared compiler) are where cross-service contracts matter most.",
+
+  "contracts": [
+    {
+      "name": "WS wire protocol",
+      "between": ["harkd", "renderer"],
+      "files": ["engine/Sources/Harkd/WireProtocol.swift", "engine/Sources/Harkd/WebSocketServer.swift", "ui/src/app/services/engine.service.ts"],
+      "checkedBy": ["engine/Tests/HarkdTests/RagWireTests.swift"],
+      "note": "snake_case JSON mirrored by hand in TS; no shared compiler across the Swift↔TS seam"
+    },
+    {
+      "name": "contextBridge IPC",
+      "between": ["renderer", "main"],
+      "files": ["ui/src/main/preload.ts", "ui/src/main/tray-preload.ts"],
+      "checkedBy": [],
+      "note": "the renderer↔main trust boundary (window.hark)"
+    }
+  ],
+  "_contracts_note": "(micro only, derived) the un-greppable cross-service edges: wire protocols, API/event schemas, IPC bridges, deploy/compose manifests. Source these from the contract files, NOT the code graph."
+}

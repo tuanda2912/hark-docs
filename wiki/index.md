@@ -3,6 +3,7 @@
 ## Overview
 - [[overview]] — Hark is a local-first, macOS-only meeting transcription app — a Swift sidecar (harkd) does on-device ASR/diarization/RAG and an Electron+Angular shell drives it over a loopback WebSocket, with the only content egress being an explicit, user-invoked LLM edge.
 - [[onboarding]] — a newcomer's reading path through the source: project overview → 7 layers → key concepts → the 14-step guided tour → file map → complexity hotspots. Generated from the knowledge graph; also mirrored to the code repo's `docs/ONBOARDING.md`.
+- [[feature-map]] — the **feature → service → subsystem** traceability layer: which of the 3 processes (`harkd`/`main`/`renderer`) + subsystems each user-facing feature spans, the cross-process wire/IPC contracts, and per-feature status. Answers "if I change feature X, what moves?"
 
 ## Subsystems
 - [[subsystems/engine-harkd|Engine / harkd]] — The long-lived Swift sidecar that owns the whole per-meeting lifecycle: an EngineSession actor wiring capture → VAD → 30s/5s sliding window → WhisperKit (ANE) → reconciliation → WS emit, with single-window backpressure, and an offline diarization + vault-write pass at capture.stop.
