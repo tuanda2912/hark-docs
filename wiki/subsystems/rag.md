@@ -2,9 +2,20 @@
 type: subsystem
 title: Local RAG index (built-in backend)
 status: current
-sources: ["engine/Sources/Harkd/RagChunker.swift", "engine/Sources/Harkd/RagIndex.swift", "engine/Sources/Harkd/RagIndexer.swift", "docs/decisions/0032-vault-rag-architecture.md", "docs/design/07-data-flows.md"]
+sources:
+  - engine/Sources/Harkd/RagChunker.swift
+  - engine/Sources/Harkd/RagIndex.swift
+  - engine/Sources/Harkd/RagIndexer.swift
+  - docs/decisions/0032-vault-rag-architecture.md
+  - docs/design/07-data-flows.md
 updated: 2026-06-30
-tags: [rag, engine, harkd, embeddings, vault, privacy]
+tags:
+  - rag
+  - engine
+  - harkd
+  - embeddings
+  - vault
+  - privacy
 ---
 
 # Local RAG index (built-in backend)

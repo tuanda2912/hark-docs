@@ -2,9 +2,18 @@
 type: subsystem
 title: Preload security & IPC bridge
 status: current
-sources: [docs/decisions/0010-phase-4-ui-scaffold.md, docs/decisions/0014-ui-preferences-persistence.md, docs/decisions/0021-macos-app-packaging.md, "graph: Electron Main Process"]
+sources:
+  - docs/decisions/0010-phase-4-ui-scaffold.md
+  - docs/decisions/0014-ui-preferences-persistence.md
+  - docs/decisions/0021-macos-app-packaging.md
+  - "graph: Electron Main Process"
 updated: 2026-06-30
-tags: [security, preload, ipc, contextisolation, csp]
+tags:
+  - security
+  - preload
+  - ipc
+  - contextisolation
+  - csp
 ---
 
 # Preload security & IPC bridge
