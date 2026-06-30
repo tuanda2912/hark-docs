@@ -1,51 +1,62 @@
-# Hark Project Wiki — Index
+# Hark wiki — index
 
-## Overview
-- [[overview]] — Hark is a local-first, macOS-only meeting transcription app — a Swift sidecar (harkd) does on-device ASR/diarization/RAG and an Electron+Angular shell drives it over a loopback WebSocket, with the only content egress being an explicit, user-invoked LLM edge.
-- [[onboarding]] — a newcomer's reading path through the source: project overview → 7 layers → key concepts → the 14-step guided tour → file map → complexity hotspots. Generated from the knowledge graph; also mirrored to the code repo's `docs/ONBOARDING.md`.
-- [[feature-map]] — the **feature → service → subsystem** traceability layer: which of the 3 processes (`harkd`/`main`/`renderer`) + subsystems each user-facing feature spans, the cross-process wire/IPC contracts, and per-feature status. Answers "if I change feature X, what moves?"
+The catalog. **Read this first.** Built by Cairn (`/cairn-rebuild`) from `docs/` + the 38 ADRs in the code
+repo + the code graph — see [sources](sources.md).
 
-## Subsystems
-- [[subsystems/engine-harkd|Engine / harkd]] — The long-lived Swift sidecar that owns the whole per-meeting lifecycle: an EngineSession actor wiring capture → VAD → 30s/5s sliding window → WhisperKit (ANE) → reconciliation → WS emit, with single-window backpressure, and an offline diarization + vault-write pass at capture.stop.
-- [[subsystems/whisperkit-asr|WhisperKit ASR & sliding window]] — On-device speech-to-text via WhisperKit large-v3-turbo on the Apple Neural Engine, driven by a 30-second sliding window with a 5-second hop that re-transcribes overlap and emits segment.partial → segment.final keyed by utterance_id; Phase 0 measured RTF ~0.075 on M4.
-- [[subsystems/vad|VAD — voice activity detection]] — A VAD protocol with an energy-based default (EnergyVAD: per-frame RMS state machine + ~800ms hangover) that gates which frames enter the sliding window so silence never reaches WhisperKit; designed as a drop-in so a Silero CoreML VAD can replace it.
-- [[subsystems/audio-capture|Audio capture — Process Taps, ScreenCaptureKit & mic]] — Captures system audio (Core Audio Process Taps opt-in, ScreenCaptureKit default) plus microphone, resamples per-source and mixes via FIFO + tanh soft-clip into one 16 kHz mono s16le stream; taps need kTCCServiceAudioCapture, a real CFRunLoop, a correctly composed aggregate device, and isExclusive left unset.
-- [[subsystems/wire-protocol|Wire protocol — harkd↔UI WebSocket]] — A Swift NIO localhost-only (127.0.0.1) WebSocket server and the versioned JSON envelope it carries (meta./capture./segment./warning/error/meeting./rag.* frames + UI→engine commands), with snake_case on the wire mirrored byte-for-byte by the renderer's TypeScript types.
-- [[subsystems/diarization|Offline speaker diarization]] — A post-stop batch pass (never live) using FluidAudio's OfflineDiarizerManager (pyannote-community-1 + WeSpeaker + VBx global clustering) that labels finalized utterances by time-overlap with anonymous 'Speaker N' tags; live segment.final ships speaker:nil and labels are back-annotated at stop.
-- [[subsystems/speaker-enrollment|Speaker enrollment — voiceprint store]] — SpeakerStore persists one JSON voiceprint per person (256-dim L2-normalized WeSpeaker centroid) under vault/.speakers/ keyed by UUID, enrolled when a user names a speaker post-stop and cosine-matched in future meetings; gated by the rememberSpeakers opt-in flag (zero .speakers/ I/O when off).
-- [[subsystems/vault-writer|Vault writer & per-meeting git]] — The sole meeting-file writer in the engine: at capture.stop it renders front-matter + a ## Transcript blockquote body to vault/meetings/<date-slug>.md (atomic, never-overwrite), best-effort local git-commits, re-renders on speaker rename, and idempotently merges ## Summary and per-language ## Transcript — <lang> sections.
-- [[subsystems/audio-store|Meeting audio store]] — AudioStore opt-in persists the full-meeting 16 kHz mono PCM (the same buffer diarization uses) to vault/.audio/<meeting-id>.wav via HarkCore.WAVWriter, reusing the meeting's exact .md basename; gated by the keepAudio flag with zero .audio/ I/O when off, and powers the Post-Meeting Review screen.
-- [[subsystems/rag|Vault RAG — embedder, index & chunker]] — The engine's fully-local retrieval pipeline: a CoreML multilingual-e5-small embedder (384-dim, ANE, e5 query/passage prefixing + masked mean-pooling), a heading-aware chunker, and a brute-force in-memory cosine index over an offset-only persisted file (vectors.bin/meta.jsonl/manifest.json in app-data, never raw note text), refreshed by a content-hash-gated FSEvents watcher.
-- [[subsystems/electron-main|Electron main — lifecycle, harkd spawn & port handshake]] — The Electron main process orchestrates the app and is the IPC trust boundary: it spawns the harkd sidecar, discovers its WebSocket via the engine.port handshake (poll JSON {port,pid,version}, 180s timeout for cold ANE compile), creates the hardened main window + tray, and gates privileged IPC (prefs, vault-confined file reveal/read, mic permission).
-- [[subsystems/preload-security|Preload / contextBridge security surface]] — The single sanctioned renderer↔main channel: preload.ts exposes exactly window.hark (and a separate minimal window.harkTray) as thin ipcRenderer wrappers that re-shape every payload to strict whitelisted fields, with the load-bearing property that the API key crosses one-way (renderer→main) and is never readable back — there is no getKey.
-- [[subsystems/llm-egress|LLM provider layer & egress governance]] — The only outbound-network surface for user content, living entirely in Electron main: a provider-agnostic layer (Anthropic + OpenAI-compatible, raw fetch, no SDK) that forks local-loopback (zero egress) vs cloud (regex+known-name redaction), encrypts keys via safeStorage, and writes a metadata-only cloud-calls.json log — never content.
-- [[subsystems/external-rag-client|External RAG retrieval client]] — A loopback-only vault-retrieval client used only when prefs.rag.backend = external: a hand-rolled raw-fetch client (no MCP SDK) with plain-HTTP and minimal MCP-over-Streamable-HTTP transports, gated by assertLoopbackEndpoint + fetch redirect:'error' (SSRF closed) and mapping results into the same chunk shape as the built-in engine path.
-- [[subsystems/tray|Tray & tray popover]] — The persistent macOS menu-bar surface: HarkTray derives icon + native-menu enablement from a {capturing,ready,connected} TrayState, left-click opens a frameless token-styled popover (the same Angular bundle loaded with a #tray hash → TrayPopoverComponent), and a second minimal window.harkTray bridge relays only a validated state in and a whitelisted action out — no engine port, prefs, or LLM access.
-- [[subsystems/engine-service|EngineService — renderer WebSocket client]] — The renderer's single owner of the harkd WebSocket: it parses each envelope, projects engine state into Angular signals, maintains a utterance_id-keyed segment Map (partial upsert / final flip / superseded delete / meeting.transcript swap), sends fire-and-forget commands, runs the one rag.retrieve request/reply with a 15s timeout, and owns the speaker→color mapping.
-- [[subsystems/ui-shell|UI shell — Angular renderer, services & panels]] — The Electron + Angular 21 (standalone, signals, Tailwind via CSS-variable tokens) renderer: a 3-column AppComponent shell (Attendees | live transcript | Ask) plus the supporting services (LlmService, RetrievalService, TranslationJobService, PreferencesService, ThemeService) and panel/atom components, with strict CSP and no telemetry.
-- [[subsystems/llm-service|LlmService — renderer model-provider facade]] — A thin signals-based renderer facade over window.hark.llm that never makes a network call and never reads back a stored key: it consumes LlmStatus (configured/hasKey/config) and result objects, exposes summarize/translate/ask/translateSegment, and degrades gracefully (configured stays false) outside Electron.
-- [[subsystems/retrieval-service|RetrievalService & TranslationJobService — renderer orchestrators]] — Two small renderer orchestrators: RetrievalService forks vault-scope Ask between the built-in engine index (over the WS) and the external loopback client per prefs (identical chunk shape), and TranslationJobService runs on-demand post-stop transcript translation as a one-line-at-a-time background job that persists via the engine's single vault writer.
+## Start here
+- [Overview](overview.md) — what Hark is + the architecture at a glance
+- [Glossary](glossary.md) — load-bearing terms
+- [New-contributor onboarding](onboarding.md)
+- [Feature → file map](feature-map.md) — feature → capability → files (+ status, gaps)
 
 ## Concepts
-- [[concepts/threat-model|Threat model & privacy hard rules]] — The six non-negotiable rules that make privacy the product: audio never leaves the Mac except via an explicit user-invoked LLM path; nothing sensitive is written outside the vault; no telemetry; the vault is sacred (git-backed, never auto-deleted); voiceprints stay local; any new network socket needs an ADR.
-- [[concepts/local-first-guarantee|Local-first guarantee]] — Hark's core promise: speech-to-text, speaker recognition, RAG indexing and storage are 100% on-device (WhisperKit/FluidAudio/e5 on the ANE) with no account, telemetry, or background sync — content leaves only when the user explicitly invokes the cloud-LLM edge, and a local model means zero egress.
-- [[concepts/egress-governance|Egress governance]] — All outbound LLM bytes pass through a single chokepoint in Electron main (raw fetch, no SDK): a cloud call redacts PII and writes a metadata-only cloud-calls.json receipt, a loopback/local model is zero egress, the renderer never networks and never reads the key, and the engine stays network-free.
-- [[concepts/streaming-finalization|Streaming finalization]] — The rules that turn a re-transcribed 30s/5s sliding window into stable text: utterance_id keys partial→final replacement, the v2 max-denominator overlap rule stops UUID hijacking, supersession retracts overlapping fragments (time-containment AND text-prefix), region-based finalization commits each region exactly once, and grow-in-place recovers dropped tails for export only.
-- [[concepts/pluggable-retrieval|Pluggable retrieval]] — Vault retrieval sits behind one RetrievalBackend interface with two user-chosen implementations — built-in (the engine's CoreML embedder + brute-force offset-only index, default) or external (a user-run loopback service, recommended as an MCP server) — while the downstream redact→LLM→log→citations path stays identical regardless of backend.
-- [[concepts/privacy-data-control|Privacy & data-control (opt-in gates)]] — The governance model for the three sensitive artifacts — transcript (always, vault-local) vs audio + voiceprints (opt-in, default OFF) — enforced by the keepAudio and rememberSpeakers flags sent on capture.start, surfaced for informed consent in onboarding, reversible in Settings → Privacy, and gitignored so they never travel a remote.
-- [[concepts/markdown-second-brain|Markdown second-brain & roadmap]] — The vault is a plain, Obsidian-compatible, git-backed markdown folder the user owns — the substrate for vault-wide RAG, semantic search, and LLM extraction — and the eventual in-app feature this very project wiki dogfoods; tracks the Phase 0–7 roadmap (currently Phase 7 packaging/notarization, ~60%).
-- [[concepts/design-system|Visual design system — the "Heard ripples" identity]] — Hark's look is one token file (`tokens.css`) plus the concentric-ripple brand mark (`RipplesComponent`), held to a native-mac bar: token-driven theming, a shared motion vocabulary + tactile/focus states (reduced-motion gated), `.col-title`/`.status-pill` headers, and deliberate non-defaults (system SF font, tight radii, one accent, no remote fonts/assets — the CSP forbids them).
+- [Local-first & the single egress edge](concepts/local-first-egress.md)
+- [Local-first guarantee](concepts/local-first-guarantee.md)
+- [Threat model](concepts/threat-model.md)
+- [Egress governance](concepts/egress-governance.md)
+- [Privacy & data-control model](concepts/privacy-data-control.md)
+- [The vault — a plain-markdown second brain](concepts/markdown-second-brain.md)
+- [Pluggable retrieval backend](concepts/pluggable-retrieval.md)
+- [Streaming utterance finalization](concepts/streaming-finalization.md)
+- [Design system & visual brief](concepts/design-system.md)
+
+## Subsystems
+### Engine (Swift / harkd)
+- [harkd daemon (engine binary)](subsystems/engine-harkd.md)
+- [EngineSession (session service)](subsystems/engine-service.md)
+- [Audio capture & engine core](subsystems/audio-capture.md)
+- [Voice Activity Detection (VAD)](subsystems/vad.md)
+- [WhisperKit ASR](subsystems/whisperkit-asr.md)
+- [Streaming daemon & transcription](subsystems/streaming-daemon.md)
+- [Diarization (FluidAudio offline pass)](subsystems/diarization.md)
+- [Speaker enrollment & matching](subsystems/speaker-enrollment.md)
+- [Audio store (meeting-audio persistence)](subsystems/audio-store.md)
+- [Local RAG index (built-in backend)](subsystems/rag.md)
+- [Vault writer (markdown + git)](subsystems/vault-writer.md)
+### UI (Electron / Angular)
+- [UI renderer (Angular)](subsystems/ui-renderer.md)
+- [UI shell & main window](subsystems/ui-shell.md)
+- [Tray menu & global hotkeys](subsystems/tray.md)
+- [Electron main process](subsystems/electron-main.md)
+- [Preload security & IPC bridge](subsystems/preload-security.md)
+- [WebSocket wire protocol (engine ↔ UI)](subsystems/wire-protocol.md)
+### Privacy & retrieval edge
+- [Privacy & LLM egress](subsystems/llm-egress.md)
+- [LLM provider service](subsystems/llm-service.md)
+- [Retrieval service (backend switch)](subsystems/retrieval-service.md)
+- [External RAG client (loopback transport)](subsystems/external-rag-client.md)
 
 ## Decisions
-- [[decisions/foundations|Foundations (ADR-0001/0002/0003/0004/0005/0013)]] — The locked stack: Electron over Tauri (0001), macOS-only Apple-Silicon scope (0002), a Swift+WhisperKit engine over Rust (0003), no cloud ASR ever (0004), Phase 0 RTF validated at ~0.075 (0005), and MIT license (0013) — none to be re-litigated.
-- [[decisions/capture-audio|Capture & audio (ADR-0006/0007/0011)]] — System-audio capture architecture: ScreenCaptureKit + mic mixed to 16 kHz mono with a 14.4 floor (0006), actively request TCC permissions on first use (0007, amends 0006), and the Core Audio Process Tap recipe that makes a non-GUI process actually capture (0011).
-- [[decisions/streaming-finalization-decisions|Streaming & finalization (ADR-0008/0009/0018/0019/0036)]] — The live pipeline and how it stabilizes text: Phase 3 streaming architecture (0008), utterance_id overlap rule v2 (0009), the segment.superseded retraction signal (0018), region-based commit-watermark finalization (0019), and export-only grow-in-place which amends 0019 (0036).
-- [[decisions/diarization-speakers|Diarization & speakers (ADR-0016/0017/0020/0024/0025/0026)]] — Offline FluidAudio diarization, engine-written, anonymous Speaker N (0016) with the pipeline choice superseded by the offline VBx OfflineDiarizerManager (0017); post-save speaker rename (0020), on-screen back-annotation at stop (0024), no live diarization in v1 (0025), and speaker enrollment / voiceprints (0026).
-- [[decisions/privacy-egress|Privacy & egress (ADR-0027/0028/0029/0030/0031)]] — The privacy/data-control model with opt-in keepAudio + rememberSpeakers gates (0027), meeting-audio WAV persistence (0028), the main-process provider-agnostic LLM egress layer (0029), safeStorage API-key storage (0030), and content redaction + the metadata-only cloud-call log (0031).
-- [[decisions/vault-rag-decisions|Vault RAG (ADR-0032/0033/0034)]] — Vault-wide retrieval: the engine-side on-device embedder + brute-force offset-only index (0032), a pluggable built-in-or-external retrieval backend (0033), and the hand-rolled loopback HTTP + minimal MCP-over-HTTP external transport with SSRF guard (0034).
-- [[decisions/translation|Translation (ADR-0035/0037)]] — Arbitrary-target translation via per-segment LLM reusing the egress layer (0035) — its live-during-capture form was removed by 0037 (0035→0037), leaving on-demand post-stop structured translation as the single surface; engine task:.translate plumbing is left dormant.
-- [[decisions/packaging-distribution|Packaging & distribution (ADR-0021/0038)]] — macOS .app packaging with electron-builder bundling harkd via extraResources + com.apple.security.inherit so TCC attributes audio to Hark (0021), amended by explicit nested-sidecar signing via mac.binaries plus the notarize-and-staple chain (0038, amends 0021).
-- [[decisions/ui-onboarding|UI & onboarding (ADR-0010/0014/0022/0023)]] — The Phase 4 Electron+Angular signals scaffold (0010), local prefs persistence (0014), first-run model-load progress behind an anti-flash readiness gate (0022), and the three/four-screen Trust→Permissions→Setup onboarding overlay gated on hasCompletedOnboarding (0023).
+- [Founding choices (Electron, macOS-only, Swift+WhisperKit, no cloud ASR, MIT)](decisions/foundations.md)
+- [A separate Swift engine sidecar](decisions/swift-engine-sidecar.md)
+- [Capture architecture (system audio + mic, process tap, permissions)](decisions/capture-audio.md)
+- [Streaming & finalization decisions](decisions/streaming-finalization-decisions.md)
+- [Diarization & speaker decisions](decisions/diarization-speakers.md)
+- [Privacy & egress decisions](decisions/privacy-egress.md)
+- [Vault + RAG decisions](decisions/vault-rag-decisions.md)
+- [UI scaffold, first-run onboarding & model-load](decisions/ui-onboarding.md)
+- [Live translation — deferred to on-demand post-stop](decisions/translation.md)
+- [macOS packaging, signing & notarization](decisions/packaging-distribution.md)
 
-## Glossary
-- [[glossary]] — Definitions of Hark's load-bearing terms — RTF, ANE, WhisperKit, FluidAudio, utterance_id, commit watermark, supersession, grow-in-place, VAD, diarization, voiceprint, harkd, engine.port, TCC, Process Tap, egress, redaction, loopback guard, RAG, embedder, offset-only index, vault, squircle, template image.
+## Meta
+- [Sources](sources.md) · [Log](log.md)

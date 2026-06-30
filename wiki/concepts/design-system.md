@@ -1,86 +1,45 @@
 ---
 type: concept
-title: Visual design system — the "Heard ripples" identity
+title: Design system & visual brief
 status: current
-sources: [ui/src/styles/tokens.css, ui/src/app/components/ripples.component.ts, ADR-0010, "hark-docs/docs/design/11-ui-visual-brief.md"]
-updated: 2026-06-17
-tags: [ui, design, identity, motion, tokens, accessibility]
+sources: [docs/design/11-ui-visual-brief.md, docs/decisions/0010-phase-4-ui-scaffold.md]
+updated: 2026-06-30
+tags: [design, ui, theme, tokens, mac-native]
 ---
 
-**Hark's look is one token file plus one motif, held to a native-macOS bar.** The
-renderer carries no design framework: every colour, font, radius, spacing and
-motion value is a CSS custom property in `ui/src/styles/tokens.css`, surfaced to
-Tailwind as `var(--…)` refs ([[ui-shell]]), so the whole theme repaints on a
-single `data-theme` flip with zero JS ([[ui-shell]] · ADR-0010 §2). This page is
-the index from the *design language* to the code that enforces it.
+# Design system & visual brief
 
-> The visual brief lives in the sibling docs repo —
-> [`docs/design/11-ui-visual-brief.md`](https://github.com/tuanda2912/hark-docs/blob/main/docs/design/11-ui-visual-brief.md).
-> The tokens file is the runtime source of truth; the brief is the rationale.
+Hark's visual language. The product's value is **trust**, so the UI should "feel like a Swiss bank
+lobby, not a startup demo" — calm, focused, technically credible, quietly Mac-native
+(`docs/design/11-ui-visual-brief.md` §3). The audience is senior, compliance-bound knowledge workers who
+use Obsidian/Linear and distrust SaaS gloss (§2).
 
-## The "Heard ripples" identity
+## Foundations
+- **Dark mode default**, light supported — meetings run all day, dark reduces strain (§3 Color
+  palette). Dark backgrounds are deep cool gray (`#0e1116`–`#161a21`), surfaces `#1a1f27`, subtle
+  borders `#262c36`, primary text warm off-white `#e8eaed`.
+- **One accent** (muted teal-blue `#5eb3c8` / `#7aa9d6`) for links, focus, active state, recording
+  indicator — never chrome decoration. Recording red is a warm `#e35d6a`, not panic-red. A muted
+  6-color palette tags speakers in the transcript (§3).
+- **Typography:** SF Pro for UI; Inter / SF Pro at 14–15px, line-height 1.55 for transcript body;
+  monospace for timestamps, vault paths, code (§3 Typography).
+- **Density:** medium-dense (closer to Obsidian/Linear than Notion). Radius 6–8px panels, 4px inputs;
+  spacing scale 4/8/12/16/24/32/48; **borders before shadows** (§3 Density, Shape & spacing).
+- **Motion:** sparing — fade-in 150ms transcript lines, 200ms panels, no bouncy springs; a slow
+  2-second recording pulse (§3 Motion).
 
-The brand mark is a set of **concentric accent rings + a centre dot** — the same
-motif as the app icon — rendered as a reusable `RipplesComponent`
-(`ui/src/app/components/ripples.component.ts`): pure inline SVG over CSS
-keyframes, **accent-tinted via the design token** (`stroke="currentColor"`, a
-`color` input, defaulting to `--accent`). It is the resting/listening state
-across the shell's empty surfaces — the transcript centre column, the Attendees
-panel, the Ask panel's "connect a model" state, the onboarding Trust step, and
-the menu-bar [[tray]] status (tinted recording-red while capturing).
+## Hard "don'ts"
+No "AI shimmer" gradients, no big bright pill buttons, no marketing emoji (SF Symbols only), no card
+explosion, no tutorial coach-marks in the main UI, no `✨ NEW` badges, no dark patterns, no mobile
+patterns (bottom tabs / hamburgers) (§4).
 
-- **At rest** the rings ripple outward *slowly* (~4.4 s) and the core breathes —
-  a quiet "I'm here, ready" pulse the moment you look, not gated on capture.
-- **While capturing** the same motion runs ~2× faster — clearly livelier, not a
-  different effect.
-- Honours `prefers-reduced-motion`: all movement stops, leaving the two static
-  base rings + core.
+## How it reaches the code
+The design pass ships as a React/HTML **visual contract** (not source); its tokens
+(`styles/tokens.css`) are lifted **verbatim** into the renderer (`0010` §Context). In the
+[[ui-renderer]] they become `:root` + `[data-theme="dark|light"]` blocks; Tailwind v3
+`theme.extend.colors` references the CSS vars (`bg: 'var(--bg)'`), so theme switching is a single
+`<html data-theme>` attribute toggle with no JS recompute (`0010` §Decision 2). Surfaces built to
+this system: [[ui-shell]], [[tray]], onboarding ([[ui-onboarding]]).
 
-## Motion vocabulary
-
-A small shared set, so micro-interactions feel coherent rather than ad-hoc:
-
-- `--ease-spring` (`cubic-bezier(0.32,0.72,0,1)`) — weighted press + settle.
-- `--ease-out` (`cubic-bezier(0.16,1,0.3,1)`) — gentle entrance decelerate.
-- `--dur-press` / `--dur-enter` — short by design; this is a calm tool, not a
-  landing page.
-
-Every interactive control gets **tactile press** (a small `scale`/`translateY`
-"give") and a **`:focus-visible` ring**; toasts + the saved-meeting card **rise
-in**; live numeric readouts (REC timer, RTF, timestamps) use **tabular figures**.
-All of it is gated by `prefers-reduced-motion` at the call site, matching the
-discipline already in onboarding + model-loading.
-
-## Section-header system
-
-Column headers use a shared pair of token classes instead of flat all-caps
-eyebrows: **`.col-title`** (a present, sentence-case title) + **`.status-pill`**
-(a small rounded state chip — `listening` / `ready` / a count, with an
-`is-live` / `is-accent` variant). Eyebrows are retained for in-panel *sub*-labels
-(Ask's "Answer" / "Sources"), so the hierarchy reads **column title → eyebrow
-sub-label**.
-
-## What stays native (the deliberate non-defaults)
-
-The identity is "bolder" but held inside a native-mac bar — the brief explicitly
-rejects the generic agency-template reach:
-
-- **System SF font stack**, not Geist/Satoshi — the correct premium choice for a
-  Mac app, and the only thing the [[threat-model|CSP]] permits (`font-src 'self'
-  data:` blocks remote fonts; nothing is fetched).
-- **Tight radii** (4/6/10/12, "no pillow"), not big agency squircles.
-- **One muted slate-blue accent**, not an AI-purple gradient.
-- **No external image assets** — the ripple is inline SVG; the brand never
-  fetches anything ([[local-first-guarantee]] · [[threat-model]]).
-
-## How it connects
-
-- **Surface** → all of this lives in the renderer ([[ui-shell]]); the menu-bar
-  variant is [[tray]]. Theme writing is `ThemeService`'s job ([[ui-shell]]).
-- **Privacy** → the "no remote fonts/assets" rule is the [[threat-model|strict
-  CSP]] in practice — the design system can't open a network path.
-- **Reuse** → `RipplesComponent` + `.col-title`/`.status-pill` are the shared
-  vocabulary new surfaces build on, rather than restyling per-screen.
-
-See also [[ui-shell]] for the shell + services, [[overview]] for the subsystem
-map, and [[glossary]] (`data-theme`, squircle, signals).
+The component inventory (transcript line, speaker tag pill, citation chip, status banner, empty
+states) is enumerated in `docs/design/11-ui-visual-brief.md` §5.

@@ -16,3 +16,8 @@ tools/node_modules/
 # and core-plugins.json ARE tracked so the configured graph travels with the repo.
 **/.obsidian/workspace.json
 **/.obsidian/workspace-mobile.json
+
+# Cairn: local safety backup (old wiki is preserved in git history) + machine-local path config
+_cairn-backup-2026-06-30/
+.claude/wiki.config.local.sh
+.cairn-manifest.json

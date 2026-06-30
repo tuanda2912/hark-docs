@@ -1,0 +1,21 @@
+{
+  "//": "Smoke-test corpus authored during the Cairn dogfood (2026-06-30). Candidate = graph capability tags; baseline = grep over ../hark. Expand with real ground truth per eval/README.md.",
+  "version": 1,
+  "repo": "../hark",
+  "graph": "../hark/.understand-anything/knowledge-graph.json",
+  "gate": { "minAbsolute": 0.5, "minDeltaPP": 0 },
+  "queries": [
+    {
+      "id": "diarization",
+      "category": "feature",
+      "feature": "speaker diarization",
+      "grepTerms": ["diariz", "speaker"],
+      "capability": "diarization",
+      "expected": [
+        "engine/Sources/Harkd/Diarizer.swift",
+        "engine/Sources/Harkd/DiarizerLoader.swift",
+        "ui/src/app/components/speaker-tagging.component.ts"
+      ]
+    }
+  ]
+}
