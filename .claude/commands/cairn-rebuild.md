@@ -67,8 +67,13 @@ echo "wiki=$WIKI_DIR  docs=$DOCS_MIRROR (source=$SRC)  code:main=$CODE"
 5. **Seed `log.md`** with a dated rebuild entry (code commit, graph counts, sources read; note it was a
    from-scratch rebuild — synthesis regenerated).
 
-6. **Summarise**: pages built, the commit + graph stats they reflect, gaps surfaced. Remind the user that
-   `/cairn-sync-all` (docs + code + `/lodestar`) keeps it fresh incrementally going forward.
+6. **Summarise with a receipt** — proof of work, not a claim. End with the standard receipt so a real
+   rebuild can never be mistaken for a no-op (the *Show your work* principle in [`CLAUDE.md`](../../CLAUDE.md)):
+   ```bash
+   node .claude/lib/receipt.mjs rebuild --scope "$WIKI_DIR" \
+     --kv pages=<n> --kv sources=<n> --kv graphCommit=<sha> --note "<gaps surfaced / lint verdict>"
+   ```
+   Then remind the user that `/cairn-sync-all` (docs + code + `/lodestar`) keeps it fresh incrementally.
 
 ## Guardrails
 - Wiki lives **outside** the code repos — write only under `$WIKI_DIR/`.

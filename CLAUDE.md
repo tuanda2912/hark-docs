@@ -89,8 +89,12 @@ wiki/
   Run **`/cairn-query`** — a zero-dep BM25 router picks the pages; token-budgeted in 3 depth tiers.
 - **Lint** (periodic health check): stale claims, broken links, orphan pages, gaps, contradictions, pages
   citing a superseded decision as current. Report + fix. Run **`/cairn-lint`** — it pairs a deterministic,
-  zero-LLM structural pass (`lib/lint-wiki.mjs`: frontmatter · index↔files · link/marker integrity) with a
-  fail-closed graph-staleness gate and the semantic judgments above; `--fix` applies only the safe ones.
+  zero-LLM structural pass (`lib/lint-wiki.mjs`: frontmatter · index↔files · link/marker integrity ·
+  **per-page staleness** — which exact pages a changed source owns, via the manifest, so you refresh those
+  not all 43 · **density** hints — thin or heavily-overlapping pages · a **secret scan**) with a fail-closed
+  graph-staleness gate and the semantic judgments above; `--fix` applies only the safe ones.
+- **Guard** (before a wiki goes public): run **`/cairn-guard`** — a fail-closed content scan for leaked
+  secrets/keys/tokens. `guard-remote` checks *where* the brain can be pushed; this checks *what's in it*.
 
 ### Hard rules
 - **Sources are read-only to the wiki.** Editing a source is a normal dev change, never a side effect of an
@@ -119,8 +123,15 @@ setup:        install understand-anything · copy .claude/ + this CLAUDE.md · /
 bootstrap:    /understand <code>   →   build the wiki (or /cairn-rebuild)   →   /lodestar
 keep fresh:   /cairn-sync-all  =  /cairn-sync-docs  →  /cairn-sync-code  →  /lodestar   (all incremental)
               docs changed → re-ingest · code changed → re-derive code pages · then re-map features → files
-verify:       /cairn-lint   — health-check what was generated (structural + staleness + semantic); --fix the safe ones
+verify:       /cairn-lint   — health-check what was generated (structural + per-page staleness + density + secrets + semantic); --fix the safe ones
+publish:      /cairn-guard  — fail-closed content scan for leaked secrets before a public wiki goes out
+upgrade:      /cairn-upgrade <cairn-src>   — pull framework fixes into THIS deployed kit (dry-run first; your config + wiki are never touched)
 ```
+
+**Kit versioning.** The deployed kit carries `.claude/cairn.version`. Cairn is *copied* into each workspace,
+so framework fixes don't propagate on their own — `/cairn-upgrade` diffs a source checkout against this
+deploy and copies only framework files (commands/lib/skills/agents + CLAUDE.md), reconciling the version
+stamp. Run it after pulling new Cairn.
 
 ## First principles (don't relitigate)
 
@@ -135,3 +146,6 @@ verify:       /cairn-lint   — health-check what was generated (structural + st
 - **Model-tier the work.** A deterministic router answers what it can with zero LLM calls; Haiku does the
   bulk collection/judgement (dedup, candidate ranking); Opus synthesises and writes. Cache any LLM-derived
   artifact on `sha256(model + input)` so it self-invalidates when the model changes.
+- **Show your work.** A command's output is *evidence*, not a claim — end every `/cairn-*` op with a receipt
+  (op · concrete counts · elapsed; `lib/receipt.mjs`). A real rebuild and a no-op must never look the same
+  from outside.

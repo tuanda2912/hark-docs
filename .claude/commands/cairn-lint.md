@@ -37,18 +37,28 @@ for a in $CODE_REPOS; do
     echo "--- repo:$a ($CODE) — no code graph; run /cairn-sync-code (or /understand $CODE) first ---"
   fi
 done
+
+echo ; echo "=== 3. surgical per-page staleness (which wiki pages a changed source owns) ==="
+MF="${MANIFEST:-.cairn-manifest.json}"
+BASES="--base ."
+for a in $CODE_REPOS; do BASES="$BASES --base $(resolve_code_repo "$a")"; done
+node .claude/lib/stale-pages.mjs "$MF" $BASES; echo "(per-page stale exit: $?  — 0 fresh/no-manifest · 1 stale pages · 2 broken manifest)"
 ```
 
 The script (`lint-wiki.mjs`) prints a JSON report on stdout and a `✗ / ⚠ / ℹ` summary on stderr. Read both.
-**Fail-closed:** a structural exit of `1`, or any repo's staleness exit of `1`/`2`, is a **BLOCKER** — the
-map is resolving through a stale graph and is lying until refreshed.
+**Fail-closed:** a structural exit of `1`, or any repo's graph-staleness exit of `1`/`2`, is a **BLOCKER** —
+the map is resolving through a stale graph and is lying until refreshed. Step 3's exit `1` is the **surgical**
+signal: the listed pages (and only those) are downstream of a changed/deleted source — refresh exactly them
+via `/cairn-sync-docs`; the rest of the wiki is trustworthy. (No `.cairn-manifest.json` yet ⇒ exit 0 with a
+note; run a sync once to enable it.)
 
 ## Procedure
 
 ### Phase 1 — Ingest the deterministic findings
-Take the structural findings and the staleness result from the preflight as-is. Do **not** re-derive them by
-hand — the script is the source of truth for the mechanical layer (frontmatter completeness, index ↔ files,
-broken links/wikilinks, orphans, log format, `@generated` marker balance, TODO inventory, sources cross-ref).
+Take the structural findings, the graph-staleness result, and the **per-page stale list** (step 3) from the
+preflight as-is. Do **not** re-derive them by hand — the scripts are the source of truth for the mechanical
+layer (frontmatter completeness, index ↔ files, broken links/wikilinks, orphans, log format, `@generated`
+marker balance, TODO inventory, sources cross-ref) and for which exact pages a changed source has staled.
 
 ### Phase 2 — Semantic checks (LLM — the part a script can't do)
 Only now read page *contents* (route via `index.md`; open only what you need — token-lean). Check:
@@ -72,6 +82,7 @@ Emit one consolidated report, grouped by severity, deterministic + semantic find
 
 **Verdict:** HEALTHY | WARNINGS | BLOCKERS
 **Staleness:** fresh @ <graphCommit> | STALE (<n> changed files vs HEAD — run /cairn-sync-code)
+**Stale pages:** none | <pages downstream of a changed/deleted source — refresh exactly these via /cairn-sync-docs>
 
 ### Blockers (must fix — structural breakage or stale graph)
 - <file:line> [<check>] — <issue> → <the exact fix / command to run>

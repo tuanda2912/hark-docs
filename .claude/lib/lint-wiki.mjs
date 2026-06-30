@@ -16,6 +16,8 @@
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, dirname, resolve, basename, extname } from 'node:path';
+import { wordCount, tagSet, findThin, findOverlaps } from './density.mjs';
+import { scan as scanSecrets } from './scan-secrets.mjs';
 
 const args = process.argv.slice(2);
 const quiet = args.includes('--quiet');
@@ -255,6 +257,27 @@ for (const p of allMd) {
 // --- wiki.context.md presence (the Read-order contract's enforced-context page) -------------------
 if (!existsSync(resolve(wikiDir, '..', 'wiki.context.md')))
   add('warning', 'context', 'wiki.context.md', 'missing — the per-project conventions/profile the Read-order contract loads first (run /cairn-setup)');
+
+// --- content confidentiality (leaked secrets/keys) ------------------------------------------------
+// Warning here (false positives shouldn't block a lint); /cairn-guard is the hard fail-closed gate.
+for (const p of allMd) {
+  for (const hit of scanSecrets(pageText.get(resolve(p)) || ''))
+    add('warning', 'secret', rel(p), `possible ${hit.desc} (${hit.rule}) — redact, or mark the line <!-- cairn:allow-secret reason -->`, hit.line);
+}
+
+// --- density (anti-sprawl, advisory) --------------------------------------------------------------
+// Cairn's generated wiki tends to sprawl into more, thinner pages than a human would write. These are
+// info-only hints — never blockers — toward fewer, denser pages.
+{
+  const dpages = contentPages.map((p) => {
+    const text = pageText.get(resolve(p)) || '';
+    return { file: rel(p), words: wordCount(text), tags: tagSet(frontmatter(text)?.tags) };
+  });
+  for (const t of findThin(dpages, 80))
+    add('info', 'density', t.file, `thin page (${t.words} words) — consider merging into a related page`);
+  for (const o of findOverlaps(dpages, 0.6, 3))
+    add('info', 'density', o.a, `tags overlap ${Math.round(o.score * 100)}% with ${o.b} — possibly one topic split in two; merge or cross-link`);
+}
 
 // --- summarise ------------------------------------------------------------------------------------
 const starter = pagesScanned === 0;
