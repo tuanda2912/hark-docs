@@ -1,0 +1,9 @@
+Cairn opt-out marker — this project DELIBERATELY allows a public git remote.
+
+hark-docs is an open-source, public wiki with no confidential/NDA content. The Cairn
+guard-remote check (lib/guard-remote.mjs) normally fail-closes /cairn-save inside a repo
+with a public remote, to keep distilled client knowledge out of pushable third-party hosts.
+This marker downgrades that BLOCK to a loud warning for THIS project only.
+
+Cairn stays fail-closed by default everywhere else. Do not copy this file into a project
+that holds anything confidential.
